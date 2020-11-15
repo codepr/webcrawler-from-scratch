@@ -6,7 +6,7 @@ from an URL and tries to build a sitemap following every link it finds, link by
 link it stores informations like site content and URL domain to a storage
 layer, making it possible to create, for example, reverse indexes and content
 signatures in order to provide efficient searching capabilities through APIs.
-In its essence, it's a recursive algorithm:
+In its essence, it's a recursive algorithm applied to a queue of URLs:
 
 1. get the next URL from the fetching queue
 2. fetch the URL page content
