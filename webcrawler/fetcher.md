@@ -417,3 +417,31 @@ func (f stdHttpFetcher) FetchLinks(targetURL string) (time.Duration, []*url.URL,
 	return elapsed, links, nil
 }
 ```
+
+Running the simple unit tests we written should result in a success outcome
+
+```sh
+go test -v ./...
+=== RUN   TestStdHttpFetcherFetch
+--- PASS: TestStdHttpFetcherFetch (0.00s)
+=== RUN   TestStdHttpFetcherFetchLinks
+--- PASS: TestStdHttpFetcherFetchLinks (0.00s)
+=== RUN   TestGoqueryParsePage
+--- PASS: TestGoqueryParsePage (0.00s)
+PASS
+ok  	webcrawler/fetcher	0.006s
+```
+
+The project structure should be the following
+
+```sh
+tree
+.
+├── fetcher
+│   ├── fetcher.go
+│   ├── fetcher_test.go
+│   ├── parser.go
+│   └── parser_test.go
+├── go.mod
+└── go.sum
+```
