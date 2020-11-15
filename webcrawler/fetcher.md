@@ -1,17 +1,29 @@
 # Fetching and parsing HTML contents
 
-Now that we have a top-down picture of the behavior we expect our crawler have to implement we can move on to lower levels and focus on every little brick we need to create in order to build our final product.
+Now that we have a top-down picture of the behavior we expect our crawler have
+to implement we can move on to lower levels and focus on every little brick we
+need to create in order to build our final product.
 
-The first component we're going to design and implement is the HTTP fetching object, in the simplest form a wrapper around an HTTP client that navigate through the HTML tree of each fetched page and extracts every link found.
+The first component we're going to design and implement is the HTTP fetching
+object, in the simplest form a wrapper around an HTTP client that navigate
+through the HTML tree of each fetched page and extracts every link found.
 
-Let's start with a breakdown of what we're going to need to implement our fetcher:
+Let's start with a breakdown of what we're going to need to implement our
+fetcher:
 
 - HTTP client
 - HTML parser
 
-So we move on defining some basic unit tests to define the behavior we expect from these 2 parts, starting with the HTML parser.
+So we move on defining some basic unit tests to define the behavior we expect
+from these 2 parts, starting with the HTML parser.
 
-*Note: After a brief search I found out that GoQuery by PuerkitoBio is the easiest and most handy library to parse HTML contents offering a jquery-like DSL to navigate through the entire tree. The alternative was the navigation by hand and probably some regex, not worth the hassle given the purpose of the project*
+*Note: After a brief search I found out that GoQuery by PuerkitoBio is the
+easiest and most handy library to parse HTML contents offering a jquery-like
+DSL to navigate through the entire tree. The alternative was the navigation by
+hand and probably some regex, not worth the hassle given the purpose of the
+project*
+
+**fetcher/parser\_test.go**
 
 ```go
 package fetcher
@@ -49,11 +61,30 @@ func TestGoqueryParsePage(t *testing.T) {
 	}
 }
 ```
-Let's now move on with the implementation, we're going to define a parser interface exposing a single method `Parse(string, *io.Reader)([]*url.URL, error)`.
 
-One of the strongest features of Go is that there's no need to explicitly declare when we want to implement an interface, we just need to implement the methods that it defines and we're good to go. This makes possible to build abstractions that we foresee as useful, like in this case (classic OOP style), but also to adapt abstractions as needed after we already worked a bit on the problems we're trying to solve:
+Let's now move on with the implementation, we're going to define a parser
+interface exposing a single method `Parse(string, *io.Reader)([]*url.URL,
+error)`.
 
-Let's say we're about to implement an object `ImageWriter` that writes binary formatted images to disk, we just need to write the method `Write` of the `io.Writer` interface without explicitly declare that we're implementing it. At the same time let's say we have an object from a third-party library that exposes a method `ReadLine` we can easily declare an interface `ReadLiner` with only a method `ReadLine` inside and use either the third-party object (or whatever object with a `ReadLine` method) or a newly defined object with the `ReadLine` method defined into a simple function `ReadByLine(r ReadLiner)`. This is really akin to a duck-typing behavior at compile time, and it's enabled by this feature of go.
+One of the strongest features of Go is that there's no need to explicitly
+declare when we want to implement an interface, we just need to implement the
+methods that it defines and we're good to go. This makes possible to build
+abstractions that we foresee as useful, like in this case (classic OOP style),
+but also to adapt abstractions as needed after we already worked a bit on the
+problems we're trying to solve:
+
+Let's say we're about to implement an object `ImageWriter` that writes binary
+formatted images to disk, we just need to write the method `Write` of the
+`io.Writer` interface without explicitly declare that we're implementing it. At
+the same time let's say we have an object from a third-party library that
+exposes a method `ReadLine` we can easily declare an interface `ReadLiner` with
+only a method `ReadLine` inside and use either the third-party object (or
+whatever object with a `ReadLine` method) or a newly defined object with the
+`ReadLine` method defined into a simple function `ReadByLine(r ReadLiner)`.
+This is really akin to a duck-typing behavior at compile time, and it's enabled
+by this feature of go.
+
+**fetcher/parser.go**
 
 ```go
 // Package fetcher defines and implement the fetching and parsing utilities
@@ -159,6 +190,7 @@ func resolveRelativeURL(baseURL string, relative string) (*url.URL, bool) {
 	return base.ResolveReference(u), true
 }
 ```
+
 Well, let's try running those tests, hopefully they'll give a positive outcome:
 
 ```sh
@@ -169,6 +201,8 @@ The next step is the definition of fetching unit tests, what we expect here is
 the possibility to simply fetch a single link, ignoring its content and
 fetching a link extracting all contained links.<br>We're probably going to
 defines 2 interfaces for these tasks, `Fetcher` and `LinkFetcher`.
+
+**fetcher/fetcher\_test.go**
 
 ```go
 package fetcher
@@ -256,6 +290,8 @@ gracefully, once again courtesy of PuerkitoBio work.
 production case this could represent a security issue, and we'd strongly prefer
 to trace when something like that happens.*
 
+**fetcher/fetcher.go**
+
 ```go
 // Package fetcher defines and implement the downloading and parsing utilities
 // for remote resources
@@ -326,11 +362,20 @@ func (f stdHttpFetcher) Fetch(url string) (time.Duration, *http.Response, error)
 }
 ```
 
-Now that we have a simple `Fetcher` interface, we can easily extend his behavior to fetch the content page and extract all the contained links, finally using that `parser` interface we have inserted into the `stdHttpFetcher`.
+Now that we have a simple `Fetcher` interface, we can easily extend his
+behavior to fetch the content page and extract all the contained links, finally
+using that `parser` interface we have inserted into the `stdHttpFetcher`.
 
-We want to maintain the separation between `Fetcher` and `LinkFetcher` interfaces in order to maintain single responsibilities to each component and because we're going to need the simple HTTP request capability later.
+We want to maintain the separation between `Fetcher` and `LinkFetcher`
+interfaces in order to maintain single responsibilities to each component and
+because we're going to need the simple HTTP request capability later.
 
-*Note: in the `Fetcher` interface and in the `LinkFetcher` one, both exported methods return also a `time.Duration` as first value, that is the wall time of the call, telling us the time elapsed to make the HTTP call. It'll return useful later for calculating a politeness delay during the crawling process*
+*Note: in the `Fetcher` interface and in the `LinkFetcher` one, both exported
+methods return also a `time.Duration` as first value, that is the wall time of
+the call, telling us the time elapsed to make the HTTP call. It'll return
+useful later for calculating a politeness delay during the crawling process*
+
+**fetcher/fetcher.go**
 
 ```go
 // LinkFetcher is an interface exposing a method to download raw contents and

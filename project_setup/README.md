@@ -21,4 +21,4 @@ quiet compact,
 and [https://tour.golang.org/welcome/1](https://tour.golang.org/welcome/1)
 provide all you need to acquire proficiency with the language.
 
-[^1]: opposite to pre-emptive, it's called cooperative because it's the routine that gives the control back to other routines so they can resume their execution, generally through an "orchestrator" component, like an event-loop. In Go this concurrency paradigm is spread across a pool of OS threads, this makes the so called "goroutines" really cheap to spawn (~1MB for OS threads vs ~2-5KB for each goroutine) in large number.
+[^1]: Opposite to pre-emptive, it's called cooperative because it's the routine that gives the control back to other routines so they can resume their execution, generally through an "orchestrator" component, like an event-loop. In Go this concurrency paradigm is spread across a pool of OS threads, this makes the so called "goroutines" really cheap to spawn (~1MB for OS threads vs ~2-5KB for each goroutine) in large number.
