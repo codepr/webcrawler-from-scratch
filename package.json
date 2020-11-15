@@ -1,0 +1,26 @@
+{
+  "name": "webcrawler-from-scratch-in-go",
+  "version": "1.0.0",
+  "description": "Simple tutorial to write a webcrawler in go ",
+  "main": "index.js",
+  "dependencies": {
+    "gitbook-plugin-diff": "^0.1.0",
+    "gulp": "^4.0.2",
+    "gulp-gh-pages": "^0.5.4",
+    "gulp-load-plugins": "^2.0.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codepr/webcrawler-from-scratch.git"
+  },
+  "author": "Andrea Giacomo Baldan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codepr/webcrawler-from-scratch/issues"
+  },
+  "homepage": "https://github.com/codepr/webcrawler-from-scratch#readme"
+}

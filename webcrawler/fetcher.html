@@ -1,0 +1,705 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Fetch and parse · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+        <link rel="stylesheet" href="../styles/website.css">
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    
+    <link rel="prev" href="./" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="../project_setup/">
+            
+                <a href="../project_setup/">
+            
+                    
+                    Project setup
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../project_setup/installation.html">
+            
+                <a href="../project_setup/installation.html">
+            
+                    
+                    Go installation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../project_setup/environment.html">
+            
+                <a href="../project_setup/environment.html">
+            
+                    
+                    Editors and IDEs
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Webcrawler
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter active" data-level="1.3.1" data-path="fetcher.html">
+            
+                <a href="fetcher.html">
+            
+                    
+                    Fetch and parse
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Fetch and parse</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="fetching-and-parsing-html-contents">Fetching and parsing HTML contents</h1>
+<p>Now that we have a top-down picture of the behavior we expect our crawler have
+to implement we can move on to lower levels and focus on every little brick we
+need to create in order to build our final product.</p>
+<p>The first component we&apos;re going to design and implement is the HTTP fetching
+object, in the simplest form a wrapper around an HTTP client that navigate
+through the HTML tree of each fetched page and extracts every link found.</p>
+<p>Let&apos;s start with a breakdown of what we&apos;re going to need to implement our
+fetcher:</p>
+<ul>
+<li>HTTP client</li>
+<li>HTML parser</li>
+</ul>
+<p>So we move on defining some basic unit tests to define the behavior we expect
+from these 2 parts, starting with the HTML parser.</p>
+<p><em>Note: After a brief search I found out that GoQuery by PuerkitoBio is the
+easiest and most handy library to parse HTML contents offering a jquery-like
+DSL to navigate through the entire tree. The alternative was the navigation by
+hand and probably some regex, not worth the hassle given the purpose of the
+project</em></p>
+<p><strong>fetcher/parser_test.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-keyword">package</span> fetcher
+
+<span class="hljs-keyword">import</span> (
+    <span class="hljs-string">&quot;bytes&quot;</span>
+    <span class="hljs-string">&quot;net/url&quot;</span>
+    <span class="hljs-string">&quot;reflect&quot;</span>
+    <span class="hljs-string">&quot;testing&quot;</span>
+)
+
+<span class="hljs-keyword">func</span> TestGoqueryParsePage(t *testing.T) {
+    parser := NewGoqueryParser()
+    firstLink, _ := url.Parse(<span class="hljs-string">&quot;https://example-page.com/sample-page/&quot;</span>)
+    secondLink, _ := url.Parse(<span class="hljs-string">&quot;http://localhost:8787/sample-page/&quot;</span>)
+    thirdLink, _ := url.Parse(<span class="hljs-string">&quot;http://localhost:8787/foo/bar&quot;</span>)
+    expected := []*url.URL{firstLink, secondLink, thirdLink}
+    content := bytes.NewBufferString(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example-page.com/sample-page/&quot; /&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;http://localhost:8787/sample-page/&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;a href=&quot;foo/bar&quot;&gt;&lt;img src=&quot;/baz.png&quot;&gt;&lt;/a&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+            &lt;a href=&quot;foo/bar&quot;&gt;
+        &lt;/body&gt;`</span>,
+    )
+    res, err := parser.Parse(<span class="hljs-string">&quot;http://localhost:8787&quot;</span>, content)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        t.Errorf(<span class="hljs-string">&quot;GoqueryParser#ParsePage failed: expected %v got %v&quot;</span>, expected, err)
+    }
+    <span class="hljs-keyword">if</span> !reflect.DeepEqual(res, expected) {
+        t.Errorf(<span class="hljs-string">&quot;GoqueryParser#ParsePage failed: expected %v got %v&quot;</span>, expected, res)
+    }
+}
+</code></pre>
+<p>Let&apos;s now move on with the implementation, we&apos;re going to define a parser
+interface exposing a single method <code>Parse(string, *io.Reader)([]*url.URL,
+error)</code>.</p>
+<p>One of the strongest features of Go is that there&apos;s no need to explicitly
+declare when we want to implement an interface, we just need to implement the
+methods that it defines and we&apos;re good to go. This makes possible to build
+abstractions that we foresee as useful, like in this case (classic OOP style),
+but also to adapt abstractions as needed after we already worked a bit on the
+problems we&apos;re trying to solve:</p>
+<p>Let&apos;s say we&apos;re about to implement an object <code>ImageWriter</code> that writes binary
+formatted images to disk, we just need to write the method <code>Write</code> of the
+<code>io.Writer</code> interface without explicitly declare that we&apos;re implementing it. At
+the same time let&apos;s say we have an object from a third-party library that
+exposes a method <code>ReadLine</code> we can easily declare an interface <code>ReadLiner</code> with
+only a method <code>ReadLine</code> inside and use either the third-party object (or
+whatever object with a <code>ReadLine</code> method) or a newly defined object with the
+<code>ReadLine</code> method defined into a simple function <code>ReadByLine(r ReadLiner)</code>.
+This is really akin to a duck-typing behavior at compile time, and it&apos;s enabled
+by this feature of go.</p>
+<p><strong>fetcher/parser.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// Package fetcher defines and implement the fetching and parsing utilities</span>
+<span class="hljs-comment">// for remote resources</span>
+<span class="hljs-keyword">package</span> fetcher
+
+<span class="hljs-keyword">import</span> (
+    <span class="hljs-string">&quot;io&quot;</span>
+    <span class="hljs-string">&quot;net/url&quot;</span>
+    <span class="hljs-string">&quot;path/filepath&quot;</span>
+    <span class="hljs-string">&quot;sync&quot;</span>
+
+    <span class="hljs-string">&quot;github.com/PuerkitoBio/goquery&quot;</span>
+)
+
+<span class="hljs-comment">// Parser is an interface exposing a single method `Parse`, to be used on</span>
+<span class="hljs-comment">// raw results of a fetch call</span>
+<span class="hljs-keyword">type</span> Parser <span class="hljs-keyword">interface</span> {
+    Parse(<span class="hljs-keyword">string</span>, io.Reader) ([]*url.URL, error)
+}
+
+<span class="hljs-comment">// GoqueryParser is just an algorithm `Parser` definition that uses</span>
+<span class="hljs-comment">// `github.com/PuerkitoBio/goquery` as a backend library</span>
+<span class="hljs-keyword">type</span> GoqueryParser <span class="hljs-keyword">struct</span> {
+    excludedExts <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">bool</span>
+    seen         *sync.Map
+}
+
+<span class="hljs-comment">// NewGoqueryParser create a new parser with goquery as backend</span>
+<span class="hljs-keyword">func</span> NewGoqueryParser() GoqueryParser {
+    <span class="hljs-keyword">return</span> GoqueryParser{
+        excludedExts: <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">bool</span>),
+        seen:         <span class="hljs-built_in">new</span>(sync.Map),
+    }
+}
+
+<span class="hljs-comment">// ExcludeExtensions add extensions to be excluded to the default exclusion</span>
+<span class="hljs-comment">// pool</span>
+<span class="hljs-keyword">func</span> (p *GoqueryParser) ExcludeExtensions(exts ...<span class="hljs-keyword">string</span>) {
+    <span class="hljs-keyword">for</span> _, ext := <span class="hljs-keyword">range</span> exts {
+        p.excludedExts[ext] = <span class="hljs-literal">true</span>
+    }
+}
+
+<span class="hljs-comment">// Parse is the implementation of the `Parser` interface for the</span>
+<span class="hljs-comment">// `GoqueryParser` struct, read the content of an `io.Reader` (e.g.</span>
+<span class="hljs-comment">// any file-like streamable object) and extracts all anchor links.</span>
+<span class="hljs-comment">// It returns a `ParserResult` object or any error that arises from the goquery</span>
+<span class="hljs-comment">// call on the data read.</span>
+<span class="hljs-keyword">func</span> (p GoqueryParser) Parse(baseURL <span class="hljs-keyword">string</span>, reader io.Reader) ([]*url.URL, error) {
+    doc, err := goquery.NewDocumentFromReader(reader)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, err
+    }
+    links := p.extractLinks(doc, baseURL)
+    <span class="hljs-keyword">return</span> links, <span class="hljs-literal">nil</span>
+}
+
+<span class="hljs-comment">// extractLinks retrieves all anchor links inside a `goquery.Document`</span>
+<span class="hljs-comment">// representing an HTML content.</span>
+<span class="hljs-comment">// It returns a slice of string containing all the extracted links or `nil` if\</span>
+<span class="hljs-comment">// the passed document is a `nil` pointer.</span>
+<span class="hljs-keyword">func</span> (p *GoqueryParser) extractLinks(doc *goquery.Document, baseURL <span class="hljs-keyword">string</span>) []*url.URL {
+    <span class="hljs-keyword">if</span> doc == <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>
+    }
+    foundURLs := []*url.URL{}
+    doc.Find(<span class="hljs-string">&quot;a,link&quot;</span>).FilterFunction(<span class="hljs-keyword">func</span>(i <span class="hljs-keyword">int</span>, element *goquery.Selection) <span class="hljs-keyword">bool</span> {
+        hrefLink, hrefExists := element.Attr(<span class="hljs-string">&quot;href&quot;</span>)
+        linkType, linkExists := element.Attr(<span class="hljs-string">&quot;rel&quot;</span>)
+        anchorOk := hrefExists &amp;&amp; !p.excludedExts[filepath.Ext(hrefLink)]
+        linkOk := linkExists &amp;&amp; linkType == <span class="hljs-string">&quot;canonical&quot;</span> &amp;&amp; !p.excludedExts[filepath.Ext(linkType)]
+        <span class="hljs-keyword">return</span> anchorOk || linkOk
+    }).Each(<span class="hljs-keyword">func</span>(i <span class="hljs-keyword">int</span>, element *goquery.Selection) {
+        res, _ := element.Attr(<span class="hljs-string">&quot;href&quot;</span>)
+        <span class="hljs-keyword">if</span> link, ok := resolveRelativeURL(baseURL, res); ok {
+            <span class="hljs-keyword">if</span> present, _ := p.seen.LoadOrStore(link.String(), <span class="hljs-literal">false</span>); !present.(<span class="hljs-keyword">bool</span>) {
+                foundURLs = <span class="hljs-built_in">append</span>(foundURLs, link)
+                p.seen.Store(link.String(), <span class="hljs-literal">true</span>)
+            }
+        }
+    })
+    <span class="hljs-keyword">return</span> foundURLs
+}
+
+<span class="hljs-comment">// resolveRelativeURL just correctly join a base domain to a relative path</span>
+<span class="hljs-comment">// to produce an absolute path to fetch on.</span>
+<span class="hljs-comment">// It returns a tuple, a string representing the absolute path with resolved</span>
+<span class="hljs-comment">// paths and a boolean representing the success or failure of the process.</span>
+<span class="hljs-keyword">func</span> resolveRelativeURL(baseURL <span class="hljs-keyword">string</span>, relative <span class="hljs-keyword">string</span>) (*url.URL, <span class="hljs-keyword">bool</span>) {
+    u, err := url.Parse(relative)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, <span class="hljs-literal">false</span>
+    }
+    <span class="hljs-keyword">if</span> u.Hostname() != <span class="hljs-string">&quot;&quot;</span> {
+        <span class="hljs-keyword">return</span> u, <span class="hljs-literal">true</span>
+    }
+    base, err := url.Parse(baseURL)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, <span class="hljs-literal">false</span>
+    }
+
+    <span class="hljs-keyword">return</span> base.ResolveReference(u), <span class="hljs-literal">true</span>
+}
+</code></pre>
+<p>Well, let&apos;s try running those tests, hopefully they&apos;ll give a positive outcome:</p>
+<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
+</code></pre>
+<p>The next step is the definition of fetching unit tests, what we expect here is
+the possibility to simply fetch a single link, ignoring its content and
+fetching a link extracting all contained links.<br>We&apos;re probably going to
+defines 2 interfaces for these tasks, <code>Fetcher</code> and <code>LinkFetcher</code>.</p>
+<p><strong>fetcher/fetcher_test.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-keyword">package</span> fetcher
+
+<span class="hljs-keyword">import</span> (
+    <span class="hljs-string">&quot;fmt&quot;</span>
+    <span class="hljs-string">&quot;net/http&quot;</span>
+    <span class="hljs-string">&quot;net/http/httptest&quot;</span>
+    <span class="hljs-string">&quot;net/url&quot;</span>
+    <span class="hljs-string">&quot;reflect&quot;</span>
+    <span class="hljs-string">&quot;testing&quot;</span>
+    <span class="hljs-string">&quot;time&quot;</span>
+)
+
+<span class="hljs-keyword">func</span> serverMock() *httptest.Server {
+    handler := http.NewServeMux()
+    handler.HandleFunc(<span class="hljs-string">&quot;/foo/bar&quot;</span>, resourceMock)
+
+    server := httptest.NewServer(handler)
+    <span class="hljs-keyword">return</span> server
+}
+
+<span class="hljs-keyword">func</span> resourceMock(w http.ResponseWriter, r *http.Request) {
+    _, _ = w.Write([]<span class="hljs-keyword">byte</span>(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example.com/sample-page/&quot; /&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;/sample-page/&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;a href=&quot;foo/bar&quot;&gt;&lt;img src=&quot;/baz.png&quot;&gt;&lt;/a&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+            &lt;a href=&quot;foo/bar&quot;&gt;
+         &lt;/body&gt;`</span>,
+    ))
+}
+
+<span class="hljs-keyword">func</span> TestStdHttpFetcherFetch(t *testing.T) {
+    server := serverMock()
+    <span class="hljs-keyword">defer</span> server.Close()
+    f := New(<span class="hljs-string">&quot;test-agent&quot;</span>, <span class="hljs-literal">nil</span>, <span class="hljs-number">10</span>*time.Second)
+    target := fmt.Sprintf(<span class="hljs-string">&quot;%s/foo/bar&quot;</span>, server.URL)
+    _, res, err := f.Fetch(target)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        t.Errorf(<span class="hljs-string">&quot;StdHttpFetcher#Fetch failed: %v&quot;</span>, err)
+    }
+    <span class="hljs-keyword">if</span> res.StatusCode != <span class="hljs-number">200</span> {
+        t.Errorf(<span class="hljs-string">&quot;StdHttpFetcher#Fetch failed: %#v&quot;</span>, res)
+    }
+    _, res, err = f.Fetch(<span class="hljs-string">&quot;testUrl&quot;</span>)
+    <span class="hljs-keyword">if</span> err == <span class="hljs-literal">nil</span> {
+        t.Errorf(<span class="hljs-string">&quot;StdHttpFetcher#Fetch failed: %v&quot;</span>, err)
+    }
+}
+
+<span class="hljs-keyword">func</span> TestStdHttpFetcherFetchLinks(t *testing.T) {
+    server := serverMock()
+    <span class="hljs-keyword">defer</span> server.Close()
+    f := New(<span class="hljs-string">&quot;test-agent&quot;</span>, NewGoqueryParser(), <span class="hljs-number">10</span>*time.Second)
+    target := fmt.Sprintf(<span class="hljs-string">&quot;%s/foo/bar&quot;</span>, server.URL)
+    firstLink, _ := url.Parse(<span class="hljs-string">&quot;https://example.com/sample-page/&quot;</span>)
+    secondLink, _ := url.Parse(server.URL + <span class="hljs-string">&quot;/sample-page/&quot;</span>)
+    thirdLink, _ := url.Parse(server.URL + <span class="hljs-string">&quot;/foo/bar&quot;</span>)
+    expected := []*url.URL{firstLink, secondLink, thirdLink}
+    _, res, err := f.FetchLinks(target)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        t.Errorf(<span class="hljs-string">&quot;StdHttpFetcher#FetchLinks failed: expected %v got %v&quot;</span>, expected, err)
+    }
+    <span class="hljs-keyword">if</span> !reflect.DeepEqual(res, expected) {
+        t.Errorf(<span class="hljs-string">&quot;StdHttpFetcher#FetchLinks failed: expected %v got %v&quot;</span>, expected, res)
+    }
+}
+</code></pre>
+<p>Ok, we just need to write some logic now to make those tests pass again.</p>
+<p>Our first move will be the definition of a standard HTTP client wrapper,
+encapsulating parsing capabilities through a parser interface dependency, its
+first feature will be the simple fetching of a link. We also want to add some
+kind of re-try mechanism in case of failure, maintaining a degree of politeness
+toward the target, a simple exponential backoff between calls is enough for
+now, <a href="https://github.com/PuerkitoBio/rehttp" target="_blank">rehttp</a> library allow us to do it
+gracefully, once again courtesy of PuerkitoBio work.</p>
+<p><em>Note: we just ignore any possible invalid TLS certificates, in a real
+production case this could represent a security issue, and we&apos;d strongly prefer
+to trace when something like that happens.</em></p>
+<p><strong>fetcher/fetcher.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// Package fetcher defines and implement the downloading and parsing utilities</span>
+<span class="hljs-comment">// for remote resources</span>
+<span class="hljs-keyword">package</span> fetcher
+
+<span class="hljs-keyword">import</span> (
+    <span class="hljs-string">&quot;crypto/tls&quot;</span>
+    <span class="hljs-string">&quot;fmt&quot;</span>
+    <span class="hljs-string">&quot;net/http&quot;</span>
+    <span class="hljs-string">&quot;net/url&quot;</span>
+    <span class="hljs-string">&quot;time&quot;</span>
+
+    <span class="hljs-string">&quot;github.com/PuerkitoBio/rehttp&quot;</span>
+)
+
+<span class="hljs-comment">// Fetcher is an interface exposing a method to fetch resources, Fetch enable</span>
+<span class="hljs-comment">// raw contents download.</span>
+<span class="hljs-keyword">type</span> Fetcher <span class="hljs-keyword">interface</span> {
+    <span class="hljs-comment">// Fetch makes an HTTP GET request to an URL returning a `*http.Response` or</span>
+    <span class="hljs-comment">// any error occured</span>
+    Fetch(<span class="hljs-keyword">string</span>) (time.Duration, *http.Response, error)
+}
+
+<span class="hljs-comment">// stdHttpFetcher is a simple Fetcher with std library http.Client as a</span>
+<span class="hljs-comment">// backend for HTTP requests.</span>
+<span class="hljs-keyword">type</span> stdHttpFetcher <span class="hljs-keyword">struct</span> {
+    userAgent <span class="hljs-keyword">string</span>
+    parser    Parser
+    client    *http.Client
+}
+
+<span class="hljs-comment">// New create a new Fetcher specifying an user-agent to set on each call,</span>
+<span class="hljs-comment">// a parser interface to parse HTML contents and a timeout.</span>
+<span class="hljs-comment">// By default it retries when a temporary error occurs (most temporary</span>
+<span class="hljs-comment">// errors are HTTP ones) for a specified number of times by applying an</span>
+<span class="hljs-comment">// exponential backoff strategy.</span>
+<span class="hljs-keyword">func</span> New(userAgent <span class="hljs-keyword">string</span>, parser Parser, timeout time.Duration) *stdHttpFetcher {
+    transport := rehttp.NewTransport(
+        &amp;http.Transport{
+            TLSClientConfig: &amp;tls.Config{InsecureSkipVerify: <span class="hljs-literal">true</span>},
+        },
+        rehttp.RetryAll(rehttp.RetryMaxRetries(<span class="hljs-number">3</span>), rehttp.RetryTemporaryErr()),
+        rehttp.ExpJitterDelay(<span class="hljs-number">1</span>, <span class="hljs-number">10</span>*time.Second),
+    )
+    client := &amp;http.Client{Timeout: timeout, Transport: transport}
+    <span class="hljs-keyword">return</span> &amp;stdHttpFetcher{userAgent, parser, client}
+}
+
+<span class="hljs-comment">// Fetch is a private function used to make a single HTTP GET request</span>
+<span class="hljs-comment">// toward an URL.</span>
+<span class="hljs-comment">// It returns an `*http.Response` or any error occured during the call.</span>
+<span class="hljs-keyword">func</span> (f stdHttpFetcher) Fetch(url <span class="hljs-keyword">string</span>) (time.Duration, *http.Response, error) {
+
+    req, err := http.NewRequest(<span class="hljs-string">&quot;GET&quot;</span>, url, <span class="hljs-literal">nil</span>)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> time.Duration(<span class="hljs-number">0</span>), <span class="hljs-literal">nil</span>, err
+    }
+    req.Header.Set(<span class="hljs-string">&quot;User-Agent&quot;</span>, f.userAgent)
+    <span class="hljs-comment">// We want to time the request</span>
+    start := time.Now()
+    res, err := f.client.Do(req)
+    elapsed := time.Since(start)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, err
+    }
+
+    <span class="hljs-keyword">return</span> elapsed, res, <span class="hljs-literal">nil</span>
+}
+</code></pre>
+<p>Now that we have a simple <code>Fetcher</code> interface, we can easily extend his
+behavior to fetch the content page and extract all the contained links, finally
+using that <code>parser</code> interface we have inserted into the <code>stdHttpFetcher</code>.</p>
+<p>We want to maintain the separation between <code>Fetcher</code> and <code>LinkFetcher</code>
+interfaces in order to maintain single responsibilities to each component and
+because we&apos;re going to need the simple HTTP request capability later.</p>
+<p><em>Note: in the <code>Fetcher</code> interface and in the <code>LinkFetcher</code> one, both exported
+methods return also a <code>time.Duration</code> as first value, that is the wall time of
+the call, telling us the time elapsed to make the HTTP call. It&apos;ll return
+useful later for calculating a politeness delay during the crawling process</em></p>
+<p><strong>fetcher/fetcher.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// LinkFetcher is an interface exposing a method to download raw contents and</span>
+<span class="hljs-comment">// parse them extracting all outgoing links.</span>
+<span class="hljs-keyword">type</span> LinkFetcher <span class="hljs-keyword">interface</span> {
+    <span class="hljs-comment">// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the</span>
+    <span class="hljs-comment">// response and returns an array of URLs or any error occured</span>
+    FetchLinks(<span class="hljs-keyword">string</span>) (time.Duration, []*url.URL, error)
+}
+
+<span class="hljs-comment">// Parse an URL extracting the protion &lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;</span>
+<span class="hljs-comment">// Returns a string with the base domain of the URL</span>
+<span class="hljs-keyword">func</span> parseStartURL(u <span class="hljs-keyword">string</span>) <span class="hljs-keyword">string</span> {
+    parsed, _ := url.Parse(u)
+    <span class="hljs-keyword">return</span> fmt.Sprintf(<span class="hljs-string">&quot;%s://%s&quot;</span>, parsed.Scheme, parsed.Host)
+}
+
+<span class="hljs-comment">// Fetch contact and download raw data from a specified URL and parse the</span>
+<span class="hljs-comment">// content into a `ParserResult` struct.</span>
+<span class="hljs-comment">// It returns a `*ParserResult` or any error occuring during the call or the</span>
+<span class="hljs-comment">// parsing of the results.</span>
+<span class="hljs-keyword">func</span> (f stdHttpFetcher) FetchLinks(targetURL <span class="hljs-keyword">string</span>) (time.Duration, []*url.URL, error) {
+    <span class="hljs-keyword">if</span> f.parser == <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> time.Duration(<span class="hljs-number">0</span>), <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: no parser set&quot;</span>, targetURL)
+    }
+    <span class="hljs-comment">// Extract base domain from the url</span>
+    baseDomain := parseStartURL(targetURL)
+
+    elapsed, resp, err := f.Fetch(targetURL)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> || resp.StatusCode &gt;= http.StatusBadRequest {
+        <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: %w&quot;</span>, targetURL, err)
+    }
+    <span class="hljs-keyword">defer</span> resp.Body.Close()
+
+    links, err := f.parser.Parse(baseDomain, resp.Body)
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: %w&quot;</span>, targetURL, err)
+    }
+    <span class="hljs-keyword">return</span> elapsed, links, <span class="hljs-literal">nil</span>
+}
+</code></pre>
+<p>Running the simple unit tests we written should result in a success outcome</p>
+<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
+=== RUN   TestStdHttpFetcherFetch
+--- PASS: TestStdHttpFetcherFetch (0.00s)
+=== RUN   TestStdHttpFetcherFetchLinks
+--- PASS: TestStdHttpFetcherFetchLinks (0.00s)
+=== RUN   TestGoqueryParsePage
+--- PASS: TestGoqueryParsePage (0.00s)
+PASS
+ok      webcrawler/fetcher    0.006s
+</code></pre>
+<p>The project structure should be the following</p>
+<pre><code class="lang-sh">tree
+.
+&#x251C;&#x2500;&#x2500; fetcher
+&#x2502;   &#x251C;&#x2500;&#x2500; fetcher.go
+&#x2502;   &#x251C;&#x2500;&#x2500; fetcher_test.go
+&#x2502;   &#x251C;&#x2500;&#x2500; parser.go
+&#x2502;   &#x2514;&#x2500;&#x2500; parser_test.go
+&#x251C;&#x2500;&#x2500; go.mod
+&#x2514;&#x2500;&#x2500; go.sum
+</code></pre>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="./" class="navigation navigation-prev navigation-unique" aria-label="Previous page: Webcrawler">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"previous":{"title":"Webcrawler","level":"1.3","depth":1,"path":"webcrawler/README.md","ref":"webcrawler/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"webcrawler/fetcher.md","ref":"webcrawler/fetcher.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"webcrawler/fetcher.md","mtime":"2020-11-15T18:08:25.945Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-15T18:37:24.686Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-livereload/plugin.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
