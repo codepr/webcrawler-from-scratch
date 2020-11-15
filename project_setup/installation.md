@@ -1,4 +1,4 @@
-# Go installation
+# Go installation and project init
 
 Go installation is pretty simple and straight-forward,
 [https://golang.org/doc/install](https://golang.org/doc/install) explain each
@@ -33,4 +33,17 @@ sudo tar -C /usr/local -xzf go1.15.5.linux-amd64.tar.gz
 
 ```sh
 go version
+```
+
+After the installation is complete and successful we just need to create the
+project folder
+
+```sh
+mkdir webcrawler && cd webcrawler
+```
+
+and init it
+
+```sh
+go mod init webcrawler
 ```

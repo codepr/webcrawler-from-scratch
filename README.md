@@ -18,6 +18,7 @@ starting from the inner-most component and extending it by adding features
 chapter by chapter.
 During the journey we'll touch many system design concepts:
 
+- microservices
 - network unreliability
 - concurrency
 - scalability
