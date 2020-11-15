@@ -1,4 +1,4 @@
-### Editors and IDEs
+# Editors and IDEs
 
 Go is a compact language and it's all-around well supported on the majority of
 the most popular editors and IDEs.

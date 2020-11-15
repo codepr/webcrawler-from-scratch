@@ -1,7 +1,7 @@
-What is a webcrawler
-====================
+What is a web crawler
+=====================
 
-In its simplest form a webcrawler is a program that explore the web starting
+In its simplest form a web crawler is a program that explore the web starting
 from an URL and tries to build a sitemap following every link it finds, link by
 link it stores informations like site content and URL domain to a storage
 layer, making it possible to create, for example, reverse indexes and content

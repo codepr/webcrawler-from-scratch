@@ -6,3 +6,4 @@
     * [Editors and IDEs](project_setup/environment.md)
 * [Webcrawler](webcrawler/README.md)
     * [Fetch and parse](webcrawler/fetcher.md)
+    * [Crawling logic](webcrawler/crawling-logic.md)

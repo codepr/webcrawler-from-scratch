@@ -1,7 +1,7 @@
 Project setup and tools
 =======================
 
-This chapter will cover all we need to create our webcrawler, with some brief
+This chapter will cover all we need to create our web crawler, with some brief
 explanations about every choice and opinions on developer tools.
 
 Go will be the language of choice, it's a simple yet very powerful language,
@@ -14,6 +14,12 @@ third-party libraries.
 If you're new to the language, it's really easy to learn and fast to become
 productive with, as it's one of the traits that Go creator put the most
 emphasis when they designed it.
+
+> *Go is incredibly easy to learn. I know this is an often-touted benefit, but
+> I was really surprised at how quickly I was able to be productive. Thanks to
+> the language, docs, and tools, I was writing interesting, committable code
+> after literally two days.*<br>
+> *[Early Impressions of Go From a Rust Programmer](https://medium.com/better-programming/early-impressions-of-go-from-a-rust-programmeer-f4fd1074c410)*
 
 Compared to many backend languages it's documentation and standard library is
 quiet compact,

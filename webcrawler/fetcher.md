@@ -14,7 +14,9 @@ fetcher:
 - HTTP client
 - HTML parser
 
-So we move on defining some basic unit tests to define the behavior we expect
+## Parsing HTML documents
+
+So we move on writing some basic unit tests to define the behavior we expect
 from these 2 parts, starting with the HTML parser.
 
 *Note: After a brief search I found out that GoQuery by PuerkitoBio is the
@@ -72,6 +74,11 @@ methods that it defines and we're good to go. This makes possible to build
 abstractions that we foresee as useful, like in this case (classic OOP style),
 but also to adapt abstractions as needed after we already worked a bit on the
 problems we're trying to solve:
+
+> *Go is an attempt to combine the safety and performance of statically typed
+> languages with the convenience and fun of dynamically typed interpretative
+> languages.*<br>
+> ***Rob Pike***
 
 Let's say we're about to implement an object `ImageWriter` that writes binary
 formatted images to disk, we just need to write the method `Write` of the
@@ -196,6 +203,8 @@ Well, let's try running those tests, hopefully they'll give a positive outcome:
 ```sh
 go test -v ./...
 ```
+
+## Fetching HTML documents
 
 The next step is the definition of fetching unit tests, what we expect here is
 the possibility to simply fetch a single link, ignoring its content and
