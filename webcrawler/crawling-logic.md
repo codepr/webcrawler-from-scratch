@@ -414,3 +414,8 @@ In the second branch it just start a timer everytime "nothing happens" in the
 main channel queue, in other word if no links are found for a determined amount
 of time (`crawlingTimeout`) the loop gets interrupted and the crawling for that
 domain ends.
+
+As of now however, it's difficult to unit-test, we have to find out a way to
+make the business logic less tied to the application and above all make it
+possible to forward crawling results to outside, so that external clients may
+use them without being tightly coupled with the crawler.
