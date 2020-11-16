@@ -1,9 +1,9 @@
 # Summary
 
 * [Introduction](README.md)
-* [Project setup](project_setup/README.md)
-    * [Go installation](project_setup/installation.md)
-    * [Editors and IDEs](project_setup/environment.md)
-* [Webcrawler](webcrawler/README.md)
-    * [Fetch and parse](webcrawler/fetcher.md)
-    * [Crawling logic](webcrawler/crawling-logic.md)
+* [Project setup](chapter0/README.md)
+    * [Go installation](chapter0/installation.md)
+    * [Editors and IDEs](chapter0/environment.md)
+* [Web crawler](chapter1/README.md)
+    * [Fetch and parse](chapter1/fetcher.md)
+    * [Crawling logic](chapter1/crawling-logic.md)
