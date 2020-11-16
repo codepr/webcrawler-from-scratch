@@ -6,7 +6,7 @@ explanations about every choice and opinions on developer tools.
 
 Go will be the language of choice, it's a simple yet very powerful language,
 empowering the user with a straight-forward set of concurrency primitives based
-on cooperative behavior[^1] and sharing-by-communication model through
+on cooperative behavior [^1] and sharing-by-communication model through
 channels, with a battery-included standard library and a comprehensive
 toolchain that makes it easy to setup new projects, test, benchmark and
 adoption of third-party libraries.

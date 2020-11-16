@@ -17,7 +17,7 @@ fetcher:
 ## Parsing HTML documents
 
 So we move on writing some basic unit tests to define the behavior we expect
-from these 2 parts, starting with the HTML parser.
+from these two parts, starting with the HTML parser.
 
 *Note: After a brief search I found out that GoQuery by PuerkitoBio is the
 easiest and most handy library to parse HTML contents offering a jquery-like
@@ -94,7 +94,7 @@ exposes a method `ReadLine` we can easily declare an interface `ReadLiner` with
 only a method `ReadLine` inside and use either the third-party object (or
 whatever object with a `ReadLine` method) or a newly defined object with the
 `ReadLine` method defined into a simple function `ReadByLine(r ReadLiner)`.
-This is a principle of **accepts interfaces, return structs**, in other words
+This is a principle of **accepts interfaces, return structs** [^2], in other words
 if a function signature accepts an interface, then callers have the option to
 pass in any concrete type, just as long as it implements that interface. The
 implication is that interfaces should be declared close to where they're used.<br>
@@ -469,3 +469,5 @@ tree
 ├── go.mod
 └── go.sum
 ```
+
+[^2]: [https://commandercoriander.net/blog/2018/03/30/go-interfaces/](https://commandercoriander.net/blog/2018/03/30/go-interfaces/)

@@ -215,7 +215,6 @@ func withConcurrency(concurrency int) crawler.CrawlerOpt {
 		s.Concurrency = concurrency
 	}
 }
-
 c := crawler.New("user-agent", withConcurrency(4))
 ```
 
