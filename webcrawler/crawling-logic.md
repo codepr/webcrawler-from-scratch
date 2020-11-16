@@ -3,14 +3,55 @@
 We're at the core logic of the web crawler, the algorithm is simple but we have
 to define some rules and settings to manage the crawling process and also to
 cover up some corner cases as well. For example what to do if we're making too
-many calls to the server? What if the response time become more and more higher
+many calls to the server? What if the response time gets higher
 at every call? How to decide the user-agent to adopt for each call? These are
 only some of the questions that arises during the design of our crawler.
 
+## Crawling settings
+
 Let's start simple by creating a struct carrying a state in the form of
-crawling settings, defining the behavior of the crawler, like the timeout to
-apply on each call, the maximum depth to reach on every domain we crawl
-(potentially a domain tree could go down several levels)
+crawling settings, defining the behavior of the crawler.
+
+What we want to be able to configure is:
+
+* `fetchingTimeout`, the number of (m)s to wait before declaring the link
+  unreachable if it's hanging
+* `crawlingTimeout`, the number of (m)s to wait after the last link we found
+  in the last crawled page, after which we declare the crawling done
+* `politenessDelay`, the number of (m)s to wait after an HTTP request before
+  making another under the same domain
+* `maxDepth`, the number of level to crawl through a domain tree, some sites
+  can be several levels deep, it comes handy set a limit in this terms
+* `maxConcurrency`, the number of concurrent worker goroutines that may run
+  during the crawling process of a domain, this is utmost important
+* `userAgent`, the user-agent that we declare on every HTTP request header,
+  this is also an important setting, being polite when crawling a domain allow
+  the server to know who's visiting every link and also define some
+  "rules of the house" to be applied in order to avoid being banned
+
+### Limiting the concurrency
+
+Setting an upper limit on the number of concurrent goroutines is vital in this
+applications and generally that limit isn't even that high, some `robots.txt`
+(those "rules of the house" defined by the domain) often set a politeness delay
+of over 1 min, or you start receive lot of `429: Too many requests` responses
+or `503: Service unavailable` with a `Retry-After` header set. This makes
+harder than it seems to write a good crawling algorithm, in this case we start
+simple by setting a fixed politeness delay and a concurrency limit, going
+incremental we'll try to implement some sort of heuristic to take into account
+the response time of each call to adjust the delay and also the `robots.txt`
+rules if present.
+
+The other concerns about letting unlimited concurrency are the most known
+regarding the resources of the host machine:
+
+* goroutines are cheap and can spawned in millions, each goroutine has a
+  memory cost around 2-5 Kbs, clearly those millions put a toll in memory
+  usage
+* the number of file descriptors grows really fast, under linux without
+  increasing it with `ulimit n` the limit is reached pretty fast as every TCP
+  connection rely on a socket; this is especially true if the crawler needs
+  also to maintain a pool of connections to a DB or store data on disk
 
 **crawler.go**
 
@@ -40,6 +81,9 @@ const (
 	// Default crawling timeout, time to wait to stop the crawl after no links are
 	// found
 	defaultCrawlingTimeout time.Duration = 30 * time.Second
+    // Default politeness delay, fixed delay to calculate a randomized wait time
+	// for subsequent HTTP calls to a domain
+	defaultPolitenessDelay time.Duration = 500 * time.Millisecond
 	// Default depth to crawl for each domain
 	defaultDepth int = 16
 	// Default number of concurrent goroutines to crawl
@@ -76,6 +120,11 @@ type CrawlerSettings struct {
 	// times it also defines which robots.txt rules to follow while crawling a
 	// domain, depending on the directives specified by the site admin
 	UserAgent string
+    // PolitenessFixedDelay represents the delay to wait between subsequent
+	// calls to the same domain, it'll taken into consideration against a
+	// robots.txt if present and against the last response time, taking always
+	// the major between these last two. Robots.txt has the precedence.
+	PolitenessFixedDelay time.Duration
 }
 
 // WebCrawler is the main object representing a crawler
@@ -86,20 +135,7 @@ type WebCrawler struct {
 	// specifications
 	settings *CrawlerSettings
 }
-```
 
-As we already seen, the problem is easily solved recursively, but go provide us
-with instruments to avoid the use of recursion which is generally a prerogative
-of functional languages and those that provide tail-recursion optimization (see
-Scala, Haskell or Erlang for example).
-
-We want to use an unbuffered channel as our queue for every new URL we want to
-crawl, this also allows to spawn a worker go routine for each URL and push all
-extracted URLs in each page directly into the channel queue, governed by the
-main routine
-
-**crawler.go**
-```go
 // New create a new Crawler instance, accepting a maximum level of depth during
 // crawling all the anchor links inside each page, a concurrency limiter that
 // defines how many goroutine to run in parallel while fetching links and a
@@ -130,7 +166,78 @@ func NewFromSettings(settings *CrawlerSettings) *WebCrawler {
 		settings: settings,
 	}
 }
+```
 
+As we can see, the number of settings is getting high and a little
+uncomfortable to manage with constructor functions, this is a good case to
+adopt an opt pattern, a common build pattern in Go, let's modify the `New`
+function:
+
+**crawler.go**
+```go
+// CrawlerOpt is a type definition for option pattern while creating a new
+// crawler
+type CrawlerOpt func(*CrawlerSettings)
+
+// New create a new Crawler instance, accepting a maximum level of depth during
+// crawling all the anchor links inside each page, a concurrency limiter that
+// defines how many goroutine to run in parallel while fetching links and a
+// timeout for each HTTP call.
+func New(userAgent string, opts ...CrawlerOpt) *WebCrawler {
+	// Default crawler settings
+	settings := &CrawlerSettings{
+		FetchingTimeout:      defaultFetchTimeout,
+		Parser:               fetcher.NewGoqueryParser(),
+		UserAgent:            userAgent,
+		CrawlingTimeout:      defaultCrawlingTimeout,
+		PolitenessFixedDelay: defaultPolitenessDelay,
+		Concurrency:          defaultConcurrency,
+	}
+
+	// Mix in all optionals
+	for _, opt := range opts {
+		opt(settings)
+	}
+
+	crawler := &WebCrawler{
+		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
+		settings: settings,
+	}
+
+	return crawler
+}
+```
+
+Now the constructor accepts optional parameters in the form of a factory
+function, this makes possible to customize the creation of the `WebCrawler`
+object:
+
+```go
+// withConcurrency is a simple constructor option to pass into the
+// crawler.New function call to set the concurrency level
+func withConcurrency(concurrency int) crawler.CrawlerOpt {
+	return func(s *crawler.CrawlerSettings) {
+		s.Concurrency = concurrency
+	}
+}
+
+c := crawler.New("user-agent", withConcurrency(4))
+```
+
+## Crawling a domain
+
+As we already seen, the problem is easily solved recursively, but Go provides
+us tools to avoid the use of recursion which is generally a prerogative of
+functional languages and those that provide tail-recursion optimization (see
+Scala, Haskell or Erlang for example).
+
+We want to use an unbuffered channel as our queue for every new URL we want to
+crawl, this also allows to spawn a worker go routine for each URL and push all
+extracted URLs in each page directly into the channel queue, governed by the
+main routine
+
+**crawler.go**
+```go
 // Crawl a single page by fetching the starting URL, extracting all anchors
 // and exploring each one of them applying the same steps. Every image link
 // found is forwarded into a dedicated channel, as well as errors.
@@ -204,7 +311,7 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 					// OOM (or banned from the website) really fast
 					semaphore <- struct{}{}
 					defer func() {
-						time.Sleep(1*time.Second)
+						time.Sleep(c.settings.PolitenessFixedDelay)
 						<-semaphore
 					}()
 					// We fetch the current link here and parse HTML for children links
