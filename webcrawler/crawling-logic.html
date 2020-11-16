@@ -231,13 +231,51 @@
 <p>We&apos;re at the core logic of the web crawler, the algorithm is simple but we have
 to define some rules and settings to manage the crawling process and also to
 cover up some corner cases as well. For example what to do if we&apos;re making too
-many calls to the server? What if the response time become more and more higher
+many calls to the server? What if the response time gets higher
 at every call? How to decide the user-agent to adopt for each call? These are
 only some of the questions that arises during the design of our crawler.</p>
+<h2 id="crawling-settings">Crawling settings</h2>
 <p>Let&apos;s start simple by creating a struct carrying a state in the form of
-crawling settings, defining the behavior of the crawler, like the timeout to
-apply on each call, the maximum depth to reach on every domain we crawl
-(potentially a domain tree could go down several levels)</p>
+crawling settings, defining the behavior of the crawler.</p>
+<p>What we want to be able to configure is:</p>
+<ul>
+<li><code>fetchingTimeout</code>, the number of (m)s to wait before declaring the link
+unreachable if it&apos;s hanging</li>
+<li><code>crawlingTimeout</code>, the number of (m)s to wait after the last link we found
+in the last crawled page, after which we declare the crawling done</li>
+<li><code>politenessDelay</code>, the number of (m)s to wait after an HTTP request before
+making another under the same domain</li>
+<li><code>maxDepth</code>, the number of level to crawl through a domain tree, some sites
+can be several levels deep, it comes handy set a limit in this terms</li>
+<li><code>maxConcurrency</code>, the number of concurrent worker goroutines that may run
+during the crawling process of a domain, this is utmost important</li>
+<li><code>userAgent</code>, the user-agent that we declare on every HTTP request header,
+this is also an important setting, being polite when crawling a domain allow
+the server to know who&apos;s visiting every link and also define some
+&quot;rules of the house&quot; to be applied in order to avoid being banned</li>
+</ul>
+<h3 id="limiting-the-concurrency">Limiting the concurrency</h3>
+<p>Setting an upper limit on the number of concurrent goroutines is vital in this
+applications and generally that limit isn&apos;t even that high, some <code>robots.txt</code>
+(those &quot;rules of the house&quot; defined by the domain) often set a politeness delay
+of over 1 min, or you start receive lot of <code>429: Too many requests</code> responses
+or <code>503: Service unavailable</code> with a <code>Retry-After</code> header set. This makes
+harder than it seems to write a good crawling algorithm, in this case we start
+simple by setting a fixed politeness delay and a concurrency limit, going
+incremental we&apos;ll try to implement some sort of heuristic to take into account
+the response time of each call to adjust the delay and also the <code>robots.txt</code>
+rules if present.</p>
+<p>The other concerns about letting unlimited concurrency are the most known
+regarding the resources of the host machine:</p>
+<ul>
+<li>goroutines are cheap and can spawned in millions, each goroutine has a
+memory cost around 2-5 Kbs, clearly those millions put a toll in memory
+usage</li>
+<li>the number of file descriptors grows really fast, under linux without
+increasing it with <code>ulimit n</code> the limit is reached pretty fast as every TCP
+connection rely on a socket; this is especially true if the crawler needs
+also to maintain a pool of connections to a DB or store data on disk</li>
+</ul>
 <p><strong>crawler.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// Package crawler containing the crawling logics and utilities to scrape</span>
 <span class="hljs-comment">// remote resources on the web</span>
@@ -264,6 +302,9 @@ apply on each call, the maximum depth to reach on every domain we crawl
     <span class="hljs-comment">// Default crawling timeout, time to wait to stop the crawl after no links are</span>
     <span class="hljs-comment">// found</span>
     defaultCrawlingTimeout time.Duration = <span class="hljs-number">30</span> * time.Second
+    <span class="hljs-comment">// Default politeness delay, fixed delay to calculate a randomized wait time</span>
+    <span class="hljs-comment">// for subsequent HTTP calls to a domain</span>
+    defaultPolitenessDelay time.Duration = <span class="hljs-number">500</span> * time.Millisecond
     <span class="hljs-comment">// Default depth to crawl for each domain</span>
     defaultDepth <span class="hljs-keyword">int</span> = <span class="hljs-number">16</span>
     <span class="hljs-comment">// Default number of concurrent goroutines to crawl</span>
@@ -300,6 +341,11 @@ apply on each call, the maximum depth to reach on every domain we crawl
     <span class="hljs-comment">// times it also defines which robots.txt rules to follow while crawling a</span>
     <span class="hljs-comment">// domain, depending on the directives specified by the site admin</span>
     UserAgent <span class="hljs-keyword">string</span>
+    <span class="hljs-comment">// PolitenessFixedDelay represents the delay to wait between subsequent</span>
+    <span class="hljs-comment">// calls to the same domain, it&apos;ll taken into consideration against a</span>
+    <span class="hljs-comment">// robots.txt if present and against the last response time, taking always</span>
+    <span class="hljs-comment">// the major between these last two. Robots.txt has the precedence.</span>
+    PolitenessFixedDelay time.Duration
 }
 
 <span class="hljs-comment">// WebCrawler is the main object representing a crawler</span>
@@ -310,17 +356,8 @@ apply on each call, the maximum depth to reach on every domain we crawl
     <span class="hljs-comment">// specifications</span>
     settings *CrawlerSettings
 }
-</code></pre>
-<p>As we already seen, the problem is easily solved recursively, but go provide us
-with instruments to avoid the use of recursion which is generally a prerogative
-of functional languages and those that provide tail-recursion optimization (see
-Scala, Haskell or Erlang for example).</p>
-<p>We want to use an unbuffered channel as our queue for every new URL we want to
-crawl, this also allows to spawn a worker go routine for each URL and push all
-extracted URLs in each page directly into the channel queue, governed by the
-main routine</p>
-<p><strong>crawler.go</strong></p>
-<pre><code class="lang-go"><span class="hljs-comment">// New create a new Crawler instance, accepting a maximum level of depth during</span>
+
+<span class="hljs-comment">// New create a new Crawler instance, accepting a maximum level of depth during</span>
 <span class="hljs-comment">// crawling all the anchor links inside each page, a concurrency limiter that</span>
 <span class="hljs-comment">// defines how many goroutine to run in parallel while fetching links and a</span>
 <span class="hljs-comment">// timeout for each HTTP call.</span>
@@ -350,8 +387,68 @@ main routine</p>
         settings: settings,
     }
 }
+</code></pre>
+<p>As we can see, the number of settings is getting high and a little
+uncomfortable to manage with constructor functions, this is a good case to
+adopt an opt pattern, a common build pattern in Go, let&apos;s modify the <code>New</code>
+function:</p>
+<p><strong>crawler.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// CrawlerOpt is a type definition for option pattern while creating a new</span>
+<span class="hljs-comment">// crawler</span>
+<span class="hljs-keyword">type</span> CrawlerOpt <span class="hljs-keyword">func</span>(*CrawlerSettings)
 
-<span class="hljs-comment">// Crawl a single page by fetching the starting URL, extracting all anchors</span>
+<span class="hljs-comment">// New create a new Crawler instance, accepting a maximum level of depth during</span>
+<span class="hljs-comment">// crawling all the anchor links inside each page, a concurrency limiter that</span>
+<span class="hljs-comment">// defines how many goroutine to run in parallel while fetching links and a</span>
+<span class="hljs-comment">// timeout for each HTTP call.</span>
+<span class="hljs-keyword">func</span> New(userAgent <span class="hljs-keyword">string</span>, opts ...CrawlerOpt) *WebCrawler {
+    <span class="hljs-comment">// Default crawler settings</span>
+    settings := &amp;CrawlerSettings{
+        FetchingTimeout:      defaultFetchTimeout,
+        Parser:               fetcher.NewGoqueryParser(),
+        UserAgent:            userAgent,
+        CrawlingTimeout:      defaultCrawlingTimeout,
+        PolitenessFixedDelay: defaultPolitenessDelay,
+        Concurrency:          defaultConcurrency,
+    }
+
+    <span class="hljs-comment">// Mix in all optionals</span>
+    <span class="hljs-keyword">for</span> _, opt := <span class="hljs-keyword">range</span> opts {
+        opt(settings)
+    }
+
+    crawler := &amp;WebCrawler{
+        logger:   log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
+        settings: settings,
+    }
+
+    <span class="hljs-keyword">return</span> crawler
+}
+</code></pre>
+<p>Now the constructor accepts optional parameters in the form of a factory
+function, this makes possible to customize the creation of the <code>WebCrawler</code>
+object:</p>
+<pre><code class="lang-go"><span class="hljs-comment">// withConcurrency is a simple constructor option to pass into the</span>
+<span class="hljs-comment">// crawler.New function call to set the concurrency level</span>
+<span class="hljs-keyword">func</span> withConcurrency(concurrency <span class="hljs-keyword">int</span>) crawler.CrawlerOpt {
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">func</span>(s *crawler.CrawlerSettings) {
+        s.Concurrency = concurrency
+    }
+}
+
+c := crawler.New(<span class="hljs-string">&quot;user-agent&quot;</span>, withConcurrency(<span class="hljs-number">4</span>))
+</code></pre>
+<h2 id="crawling-a-domain">Crawling a domain</h2>
+<p>As we already seen, the problem is easily solved recursively, but Go provides
+us tools to avoid the use of recursion which is generally a prerogative of
+functional languages and those that provide tail-recursion optimization (see
+Scala, Haskell or Erlang for example).</p>
+<p>We want to use an unbuffered channel as our queue for every new URL we want to
+crawl, this also allows to spawn a worker go routine for each URL and push all
+extracted URLs in each page directly into the channel queue, governed by the
+main routine</p>
+<p><strong>crawler.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// Crawl a single page by fetching the starting URL, extracting all anchors</span>
 <span class="hljs-comment">// and exploring each one of them applying the same steps. Every image link</span>
 <span class="hljs-comment">// found is forwarded into a dedicated channel, as well as errors.</span>
 <span class="hljs-comment">//</span>
@@ -424,7 +521,7 @@ main routine</p>
                     <span class="hljs-comment">// OOM (or banned from the website) really fast</span>
                     semaphore &lt;- <span class="hljs-keyword">struct</span>{}{}
                     <span class="hljs-keyword">defer</span> <span class="hljs-keyword">func</span>() {
-                        time.Sleep(<span class="hljs-number">1</span>*time.Second)
+                        time.Sleep(c.settings.PolitenessFixedDelay)
                         &lt;-semaphore
                     }()
                     <span class="hljs-comment">// We fetch the current link here and parse HTML for children links</span>
@@ -535,7 +632,7 @@ main routine</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"webcrawler/fetcher.md","ref":"webcrawler/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"webcrawler/crawling-logic.md","mtime":"2020-11-15T23:21:33.354Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-15T23:50:33.841Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"webcrawler/fetcher.md","ref":"webcrawler/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"webcrawler/crawling-logic.md","mtime":"2020-11-16T11:23:36.190Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T11:23:38.733Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
