@@ -336,9 +336,7 @@ And we're good to go, we should be all green running a go test now:
 ```sh
 go test -v ./...
 === RUN   TestCrawlPages
-crawler: 2020/11/16 19:21:31 Crawling done
 --- PASS: TestCrawlPages (1.20s)
-crawler: 2020/11/16 19:21:32 Crawling done
 === RUN   TestCrawlPagesRespectingMaxDepth
 --- PASS: TestCrawlPagesRespectingMaxDepth (1.07s)
 PASS
