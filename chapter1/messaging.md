@@ -2,25 +2,25 @@
 
 Middlewares are basically every software that is used as a medium, a
 communication channel between different and decoupled components in an
-architecture, message queues, message brokers, buses are effectively
+architecture, message queues, message brokers, buses are effectively all
 middlewares.
 
-Many times their used in microservices architectures, think about asynchronous
+Many times they're used in microservices architectures, think about asynchronous
 communication between different services, where you just want to schedule some
-kind of job without worrying of the immediate response, `RabbitMQ` or `SQS` is
+kind of jobs without worrying of the immediate response, `RabbitMQ` or `SQS` is
 often used in these scenarios.<br>
 In our case, we're going to add a really simple message queue interface to
 decouple the crawling logic of the web crawler, this, along with decoupling
-responsibilities, come with the benefit of a simpler testing of the entire
-applcation.
+responsibilities, comes with the benefit of a simpler testing of the entire
+application.
 
 ## Producer and consumer
 
 The most famous and simple abstraction is the producer-consumer pattern, where
 two actors are involved:
 
-* The producer, generate traffic
-* The consumer, consume the traffic
+* The producer, generates traffic
+* The consumer, consumes the traffic
 
 It's a simplification of the pub-sub pattern, but can be easily extended and
 behave just like it, with multiple subscribers consuming the same source.

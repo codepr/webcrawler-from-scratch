@@ -45,13 +45,14 @@ rules if present.
 The other concerns about letting unlimited concurrency are the most known
 regarding the resources of the host machine:
 
-* goroutines are cheap and can spawned in millions, each goroutine has a
-  memory cost around 2-5 Kbs, clearly those millions put a toll in memory
-  usage
-* the number of file descriptors grows really fast, under linux without
-  increasing it with `ulimit n` the limit is reached pretty fast as every TCP
-  connection rely on a socket; this is especially true if the crawler needs
-  also to maintain a pool of connections to a DB or store data on disk
+* goroutines are cheap and can be spawned in millions, each goroutine has a
+  memory cost around 2-5 Kbs, clearly those millions would put a toll in terms
+  of memory usage
+* the number of opened state file descriptors grows really fast, under Linux
+  without increasing it with `ulimit n` the limit is reached pretty fast as
+  every TCP connection relies on a socket; this is especially true if the
+  crawler needs also to maintain a pool of connections to a DB or store data
+  on disk
 
 **crawler.go**
 
@@ -166,10 +167,9 @@ func NewFromSettings(settings *CrawlerSettings) *WebCrawler {
 }
 ```
 
-As we can see, the number of settings is getting high and a little
-uncomfortable to manage with constructor functions, this is a good case to
-adopt an opt pattern, a common build pattern in Go, let's modify the `New`
-function:
+As we can see, the number of settings is high and a little uncomfortable to
+manage with constructor functions, this is a good case to adopt an opt pattern,
+a common build pattern in Go, let's modify the `New` function:
 
 **crawler.go**
 ```go
@@ -227,7 +227,7 @@ consisting of two simple functions:
 
 * `Crawl` the only exported function, accepts a variadic number of URL strings
   and spawn a `crawlPage` goroutine for each of them
-* `crawlPage` private function, contain the core logic, for each URL in the
+* `crawlPage` private function, contains the core logic, for each URL in the
   queue extracts every link found and put them into the same queue, starting
   from the upper-most link passed in by the `Crawl` function
 
@@ -237,7 +237,7 @@ functional languages and those that provide tail-recursion optimization (see
 Scala, Haskell or Erlang for example).
 
 We want to use an unbuffered channel as our queue for every new URL we want to
-crawl, this also allows to spawn a worker go routine for each URL and push all
+crawl, this also allows to spawn a worker goroutine for each URL and push all
 extracted URLs in each page directly into the channel queue, governed by the
 main routine
 
@@ -396,17 +396,19 @@ previously thought steps:
     * enqueue every found link into the channel queue
 4. goto 2
 
-Select makes it a little harder to follow as it introduce asynchronicity in the
-flow, but the low number of branches, just two, makes it simple to understand:
-In the second branch it just start a timer everytime "nothing happens" in the
-main channel queue, in other word if no links are found for a determined amount
-of time (`crawlingTimeout`) the loop gets interrupted and the crawling for that
-domain ends.
+The `select` makes it a little harder to follow as it introduces asynchronicity
+in the flow, but the low number of branches, just two, makes it simple to
+understand: In the second branch it just starts a timer everytime "nothing
+happens" in the main channel queue, in other word if no links are found for a
+determined amount of time (`crawlingTimeout`) the loop gets interrupted and the
+crawling for that domain ends.
 
 As of now however, it's difficult to unit-test, we have to find out a way to
 make the business logic less tied to the application and above all make it
 possible to forward crawling results to outside, so that external clients may
 use them without being tightly coupled with the crawler.
+That way it'd be possible to perform an opaque-box testing, without worrying
+of what's happening inside the crawling loop.
 
 We've just added two additional `.go` files for the `crawler` package, one for
 unit tests and one for source, this the current project structure so far:

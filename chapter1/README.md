@@ -2,7 +2,7 @@ What is a web crawler
 =====================
 
 In its simplest form a web crawler is a program that explores the web starting
-from an URL and tries to build a sitemap following every link it finds, link by
+from an URL and tries to build a sitemap following every link it finds. Link by
 link it stores informations like site content and URL domain to a storage
 layer, making it possible to create, for example, reverse indexes and content
 signatures in order to provide efficient searching capabilities through APIs.

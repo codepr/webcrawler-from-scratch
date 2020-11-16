@@ -1,18 +1,20 @@
 # Fetching and parsing HTML contents
 
-Now that we have a top-down picture of the behavior we expect our crawler have
-to implement we can move on to lower levels and focus on every little brick we
-need to create in order to build our final product.
+Now that we have a top-down picture of the behavior we expect our crawler should
+have, we can move on to lower levels and focus on every little brick we
+need to build in order to reach our goal.
 
 The first component we're going to design and implement is the HTTP fetching
-object, in the simplest form a wrapper around an HTTP client that navigate
-through the HTML tree of each fetched page and extracts every link found.
+object, basically a wrapper around an HTTP client that navigates through the
+HTML tree of each fetched page and extracts every link found.
 
 Let's start with a breakdown of what we're going to need to implement our
 fetcher:
 
 - HTTP client
+    * Retry mechanism
 - HTML parser
+    * Link extractor
 
 ## Parsing HTML documents
 
@@ -76,7 +78,7 @@ usage of this language feature.
 
 One of the strongest features of Go is that there's no need to explicitly
 declare when we want to implement an interface, we just need to implement the
-methods that it defines and we're good to go. This makes possible to build
+methods that it defines and we're good. This makes possible to build
 abstractions that we foresee as useful, like in this case (classic OOP style),
 but also to adapt abstractions as needed after we already worked a bit on the
 problems we're trying to solve:
@@ -86,21 +88,23 @@ problems we're trying to solve:
 > languages.*<br>
 > ***Rob Pike***
 
-Let's say we're about to implement an object `ImageWriter` that writes binary
-formatted images to disk, we just need to write the method `Write` of the
-`io.Writer` interface without explicitly declare that we're implementing it. At
-the same time let's say we have an object from a third-party library that
-exposes a method `ReadLine` we can easily declare an interface `ReadLiner` with
-only a method `ReadLine` inside and use either the third-party object (or
-whatever object with a `ReadLine` method) or a newly defined object with the
-`ReadLine` method defined into a simple function `ReadByLine(r ReadLiner)`.
-This is a principle of **accepts interfaces, return structs** [^2], in other words
-if a function signature accepts an interface, then callers have the option to
-pass in any concrete type, just as long as it implements that interface. The
-implication is that interfaces should be declared close to where they're used.<br>
-This is really akin to a duck-typing behavior at compile time, and it's enabled
-by this feature of go, making it, for some aspects, really similar to dynamic
-languages like Python or Ruby.
+Let's say we're about to design an object `ImageWriter` that writes binary
+formatted images to disk, we just need to implement the method `Write` of the
+`io.Writer` interface without explicitly declare that we're implementing it,
+this way our `ImageWriter` object can be used anywhere an `io.Writer` is
+accepted. At the same time let's say we have an object from a third-party
+library that exposes a method `ReadLine`, we can easily declare an interface
+`ReadLiner` with only a method `ReadLine` inside and use either the third-party
+object (or whatever object with a `ReadLine` method) or a newly defined object
+with the `ReadLine` method defined into a simple function `ReadByLine(r
+ReadLiner)`.<br>
+It's the principle of **accepts interfaces, return structs** [^2], in other
+words if a function signature accepts an interface, then callers have the
+option to pass in any concrete type, just as long as it implements that
+interface. The implication is that interfaces should be declared close to where
+they're used.<br> This is really akin to a duck-typing behavior at compile
+time, and it's enabled by this feature of Go, making it, for some aspects,
+really similar to dynamic languages like Python or Ruby.
 
 **fetcher/parser.go**
 
@@ -387,7 +391,7 @@ func (f stdHttpFetcher) Fetch(url string) (time.Duration, *http.Response, error)
 ```
 
 Now that we have a simple `Fetcher` interface, we can easily extend his
-behavior to fetch the content page and extract all the contained links, finally
+behavior to fetch the page content and extract all the contained links, finally
 using that `parser` interface we have inserted into the `stdHttpFetcher`.
 
 We want to maintain the separation between `Fetcher` and `LinkFetcher`
