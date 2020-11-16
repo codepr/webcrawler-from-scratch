@@ -243,17 +243,23 @@
                                 <section class="normal markdown-section">
                                 
                                 <h1 id="fetching-and-parsing-html-contents">Fetching and parsing HTML contents</h1>
-<p>Now that we have a top-down picture of the behavior we expect our crawler have
-to implement we can move on to lower levels and focus on every little brick we
-need to create in order to build our final product.</p>
+<p>Now that we have a top-down picture of the behavior we expect our crawler should
+have, we can move on to lower levels and focus on every little brick we
+need to build in order to reach our goal.</p>
 <p>The first component we&apos;re going to design and implement is the HTTP fetching
-object, in the simplest form a wrapper around an HTTP client that navigate
-through the HTML tree of each fetched page and extracts every link found.</p>
+object, basically a wrapper around an HTTP client that navigates through the
+HTML tree of each fetched page and extracts every link found.</p>
 <p>Let&apos;s start with a breakdown of what we&apos;re going to need to implement our
 fetcher:</p>
 <ul>
-<li>HTTP client</li>
-<li>HTML parser</li>
+<li>HTTP client<ul>
+<li>Retry mechanism</li>
+</ul>
+</li>
+<li>HTML parser<ul>
+<li>Link extractor</li>
+</ul>
+</li>
 </ul>
 <h2 id="parsing-html-documents">Parsing HTML documents</h2>
 <p>So we move on writing some basic unit tests to define the behavior we expect
@@ -309,7 +315,7 @@ usage of this language feature.</p>
 <h3 id="little-dissertation-over-interfaces-in-go">Little dissertation over interfaces in Go</h3>
 <p>One of the strongest features of Go is that there&apos;s no need to explicitly
 declare when we want to implement an interface, we just need to implement the
-methods that it defines and we&apos;re good to go. This makes possible to build
+methods that it defines and we&apos;re good. This makes possible to build
 abstractions that we foresee as useful, like in this case (classic OOP style),
 but also to adapt abstractions as needed after we already worked a bit on the
 problems we&apos;re trying to solve:</p>
@@ -319,21 +325,23 @@ languages with the convenience and fun of dynamically typed interpretative
 languages.</em><br>
 <strong><em>Rob Pike</em></strong></p>
 </blockquote>
-<p>Let&apos;s say we&apos;re about to implement an object <code>ImageWriter</code> that writes binary
-formatted images to disk, we just need to write the method <code>Write</code> of the
-<code>io.Writer</code> interface without explicitly declare that we&apos;re implementing it. At
-the same time let&apos;s say we have an object from a third-party library that
-exposes a method <code>ReadLine</code> we can easily declare an interface <code>ReadLiner</code> with
-only a method <code>ReadLine</code> inside and use either the third-party object (or
-whatever object with a <code>ReadLine</code> method) or a newly defined object with the
-<code>ReadLine</code> method defined into a simple function <code>ReadByLine(r ReadLiner)</code>.
-This is a principle of <strong>accepts interfaces, return structs</strong> <sup><a href="#fn_2" id="reffn_2">2</a></sup>, in other words
-if a function signature accepts an interface, then callers have the option to
-pass in any concrete type, just as long as it implements that interface. The
-implication is that interfaces should be declared close to where they&apos;re used.<br>
-This is really akin to a duck-typing behavior at compile time, and it&apos;s enabled
-by this feature of go, making it, for some aspects, really similar to dynamic
-languages like Python or Ruby.</p>
+<p>Let&apos;s say we&apos;re about to design an object <code>ImageWriter</code> that writes binary
+formatted images to disk, we just need to implement the method <code>Write</code> of the
+<code>io.Writer</code> interface without explicitly declare that we&apos;re implementing it,
+this way our <code>ImageWriter</code> object can be used anywhere an <code>io.Writer</code> is
+accepted. At the same time let&apos;s say we have an object from a third-party
+library that exposes a method <code>ReadLine</code>, we can easily declare an interface
+<code>ReadLiner</code> with only a method <code>ReadLine</code> inside and use either the third-party
+object (or whatever object with a <code>ReadLine</code> method) or a newly defined object
+with the <code>ReadLine</code> method defined into a simple function <code>ReadByLine(r
+ReadLiner)</code>.<br>
+It&apos;s the principle of <strong>accepts interfaces, return structs</strong> <sup><a href="#fn_2" id="reffn_2">2</a></sup>, in other
+words if a function signature accepts an interface, then callers have the
+option to pass in any concrete type, just as long as it implements that
+interface. The implication is that interfaces should be declared close to where
+they&apos;re used.<br> This is really akin to a duck-typing behavior at compile
+time, and it&apos;s enabled by this feature of Go, making it, for some aspects,
+really similar to dynamic languages like Python or Ruby.</p>
 <p><strong>fetcher/parser.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// Package fetcher defines and implement the fetching and parsing utilities</span>
 <span class="hljs-comment">// for remote resources</span>
@@ -601,7 +609,7 @@ to trace when something like that happens.</em></p>
 }
 </code></pre>
 <p>Now that we have a simple <code>Fetcher</code> interface, we can easily extend his
-behavior to fetch the content page and extract all the contained links, finally
+behavior to fetch the page content and extract all the contained links, finally
 using that <code>parser</code> interface we have inserted into the <code>stdHttpFetcher</code>.</p>
 <p>We want to maintain the separation between <code>Fetcher</code> and <code>LinkFetcher</code>
 interfaces in order to maintain single responsibilities to each component and
@@ -718,7 +726,7 @@ ok      webcrawler/fetcher    0.006s
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Web crawler","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-16T18:46:16.827Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T18:53:20.722Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Web crawler","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-16T20:04:22.394Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T19:33:49.329Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

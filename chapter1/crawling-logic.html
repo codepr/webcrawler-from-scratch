@@ -283,13 +283,14 @@ rules if present.</p>
 <p>The other concerns about letting unlimited concurrency are the most known
 regarding the resources of the host machine:</p>
 <ul>
-<li>goroutines are cheap and can spawned in millions, each goroutine has a
-memory cost around 2-5 Kbs, clearly those millions put a toll in memory
-usage</li>
-<li>the number of file descriptors grows really fast, under linux without
-increasing it with <code>ulimit n</code> the limit is reached pretty fast as every TCP
-connection rely on a socket; this is especially true if the crawler needs
-also to maintain a pool of connections to a DB or store data on disk</li>
+<li>goroutines are cheap and can be spawned in millions, each goroutine has a
+memory cost around 2-5 Kbs, clearly those millions would put a toll in terms
+of memory usage</li>
+<li>the number of opened state file descriptors grows really fast, under Linux
+without increasing it with <code>ulimit n</code> the limit is reached pretty fast as
+every TCP connection relies on a socket; this is especially true if the
+crawler needs also to maintain a pool of connections to a DB or store data
+on disk</li>
 </ul>
 <p><strong>crawler.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// Package crawler containing the crawling logics and utilities to scrape</span>
@@ -401,10 +402,9 @@ also to maintain a pool of connections to a DB or store data on disk</li>
     }
 }
 </code></pre>
-<p>As we can see, the number of settings is getting high and a little
-uncomfortable to manage with constructor functions, this is a good case to
-adopt an opt pattern, a common build pattern in Go, let&apos;s modify the <code>New</code>
-function:</p>
+<p>As we can see, the number of settings is high and a little uncomfortable to
+manage with constructor functions, this is a good case to adopt an opt pattern,
+a common build pattern in Go, let&apos;s modify the <code>New</code> function:</p>
 <p><strong>crawler.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// CrawlerOpt is a type definition for option pattern while creating a new</span>
 <span class="hljs-comment">// crawler</span>
@@ -455,7 +455,7 @@ consisting of two simple functions:</p>
 <ul>
 <li><code>Crawl</code> the only exported function, accepts a variadic number of URL strings
 and spawn a <code>crawlPage</code> goroutine for each of them</li>
-<li><code>crawlPage</code> private function, contain the core logic, for each URL in the
+<li><code>crawlPage</code> private function, contains the core logic, for each URL in the
 queue extracts every link found and put them into the same queue, starting
 from the upper-most link passed in by the <code>Crawl</code> function</li>
 </ul>
@@ -464,7 +464,7 @@ us tools to avoid the use of recursion which is generally a prerogative of
 functional languages and those that provide tail-recursion optimization (see
 Scala, Haskell or Erlang for example).</p>
 <p>We want to use an unbuffered channel as our queue for every new URL we want to
-crawl, this also allows to spawn a worker go routine for each URL and push all
+crawl, this also allows to spawn a worker goroutine for each URL and push all
 extracted URLs in each page directly into the channel queue, governed by the
 main routine</p>
 <p><strong>crawler.go</strong></p>
@@ -622,16 +622,18 @@ visited the URL</li>
 </li>
 <li>goto 2</li>
 </ol>
-<p>Select makes it a little harder to follow as it introduce asynchronicity in the
-flow, but the low number of branches, just two, makes it simple to understand:
-In the second branch it just start a timer everytime &quot;nothing happens&quot; in the
-main channel queue, in other word if no links are found for a determined amount
-of time (<code>crawlingTimeout</code>) the loop gets interrupted and the crawling for that
-domain ends.</p>
+<p>The <code>select</code> makes it a little harder to follow as it introduces asynchronicity
+in the flow, but the low number of branches, just two, makes it simple to
+understand: In the second branch it just starts a timer everytime &quot;nothing
+happens&quot; in the main channel queue, in other word if no links are found for a
+determined amount of time (<code>crawlingTimeout</code>) the loop gets interrupted and the
+crawling for that domain ends.</p>
 <p>As of now however, it&apos;s difficult to unit-test, we have to find out a way to
 make the business logic less tied to the application and above all make it
 possible to forward crawling results to outside, so that external clients may
-use them without being tightly coupled with the crawler.</p>
+use them without being tightly coupled with the crawler.
+That way it&apos;d be possible to perform an opaque-box testing, without worrying
+of what&apos;s happening inside the crawling loop.</p>
 <p>We&apos;ve just added two additional <code>.go</code> files for the <code>crawler</code> package, one for
 unit tests and one for source, this the current project structure so far:</p>
 <pre><code class="lang-sh">tree
@@ -689,7 +691,7 @@ unit tests and one for source, this the current project structure so far:</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"next":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-11-16T18:54:37.257Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T18:53:20.722Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"next":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-11-16T20:07:00.233Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T19:33:49.329Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

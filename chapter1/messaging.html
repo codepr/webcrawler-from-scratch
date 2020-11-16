@@ -243,22 +243,22 @@
                                 <h1 id="introducing-a-middleware">Introducing a middleware</h1>
 <p>Middlewares are basically every software that is used as a medium, a
 communication channel between different and decoupled components in an
-architecture, message queues, message brokers, buses are effectively
+architecture, message queues, message brokers, buses are effectively all
 middlewares.</p>
-<p>Many times their used in microservices architectures, think about asynchronous
+<p>Many times they&apos;re used in microservices architectures, think about asynchronous
 communication between different services, where you just want to schedule some
-kind of job without worrying of the immediate response, <code>RabbitMQ</code> or <code>SQS</code> is
+kind of jobs without worrying of the immediate response, <code>RabbitMQ</code> or <code>SQS</code> is
 often used in these scenarios.<br>
 In our case, we&apos;re going to add a really simple message queue interface to
 decouple the crawling logic of the web crawler, this, along with decoupling
-responsibilities, come with the benefit of a simpler testing of the entire
-applcation.</p>
+responsibilities, comes with the benefit of a simpler testing of the entire
+application.</p>
 <h2 id="producer-and-consumer">Producer and consumer</h2>
 <p>The most famous and simple abstraction is the producer-consumer pattern, where
 two actors are involved:</p>
 <ul>
-<li>The producer, generate traffic</li>
-<li>The consumer, consume the traffic</li>
+<li>The producer, generates traffic</li>
+<li>The consumer, consumes the traffic</li>
 </ul>
 <p>It&apos;s a simplification of the pub-sub pattern, but can be easily extended and
 behave just like it, with multiple subscribers consuming the same source.</p>
@@ -609,7 +609,7 @@ most of the time are inserted on the root of the site.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-16T18:59:50.727Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T18:53:20.722Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-16T19:39:05.042Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T19:33:49.329Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
