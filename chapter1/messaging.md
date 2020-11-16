@@ -312,7 +312,6 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 +			c.enqueueResults(link, foundLinks)
             // Enqueue found links for the next cycle
             linksCh <- foundLinks
-
         }(link, stop, &fetchWg)
     }
 	fetchWg.Wait()
