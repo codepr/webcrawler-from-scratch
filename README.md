@@ -1,5 +1,5 @@
 Web crawler from scratch in Go
-=============================
+==============================
 
 Ever wondered how google.com works? What's under the hood that enables any user
 to insert a string and obtain related results from the web, given it's inherent
@@ -15,7 +15,8 @@ on those topics.
 
 This will be a tutorial on how to build something akin to a raw search engine
 starting from the inner-most component and extending it by adding features
-chapter by chapter.
+chapter by chapter. The repository containing the code is
+[https://github.com/codepr/webcrawler](https://github.com/codepr/webcrawler)
 During the journey we'll touch many system design concepts:
 
 - microservices
