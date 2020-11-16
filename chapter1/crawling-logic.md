@@ -150,12 +150,10 @@ func New(userAgent string) *WebCrawler {
 		PolitenessFixedDelay: defaultPolitenessDelay,
 		Concurrency:          defaultConcurrency,
 	}
-
 	crawler := &WebCrawler{
 		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
 		settings: settings,
 	}
-
 	return crawler
 }
 
@@ -193,17 +191,14 @@ func New(userAgent string, opts ...CrawlerOpt) *WebCrawler {
 		PolitenessFixedDelay: defaultPolitenessDelay,
 		Concurrency:          defaultConcurrency,
 	}
-
 	// Mix in all optionals
 	for _, opt := range opts {
 		opt(settings)
 	}
-
 	crawler := &WebCrawler{
 		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
 		settings: settings,
 	}
-
 	return crawler
 }
 ```
@@ -261,7 +256,6 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 	defer wg.Done()
 	fetchClient := fetcher.New(c.settings.UserAgent,
 		c.settings.Parser, c.settings.FetchingTimeout)
-
 	var (
 		// semaphore is just a value-less channel used to limit the number of
 		// concurrent goroutine workers fetching links
@@ -278,7 +272,6 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		// links if a timeout occur
 		linkCounter int32 = 1
 	)
-
 	// Set the concurrency level by using a buffered channel as semaphore
 	if c.settings.Concurrency > 0 {
 		semaphore = make(chan struct{}, c.settings.Concurrency)
@@ -291,10 +284,8 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		semaphore = make(chan struct{}, 1)
 		linksCh = make(chan []*url.URL, 1)
 	}
-
 	// Just a kickstart for the first URL to scrape
 	linksCh <- []*url.URL{rootURL}
-
 	// Every cycle represents a single page crawling, when new anchors are
 	// found, the counter is increased, making the loop continue till the
 	// end of links
@@ -302,8 +293,8 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		select {
 		case links := <-linksCh:
 			for _, link := range links {
-				// Skip already visited links or disallowed ones by the robots.txt rules
-				if seen[link.String()] || !crawlingRules.Allowed(link) {
+				// Skip already visited links
+				if seen[link.String()] {
 					atomic.AddInt32(&linkCounter, -1)
 					continue
 				}
@@ -339,7 +330,6 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 					atomic.AddInt32(&linkCounter, int32(len(foundLinks)))
 					// Enqueue found links for the next cycle
 					linksCh <- foundLinks
-
 				}(link, stop, &fetchWg)
 				// We want to check if a level limit is set and in case, check if
 				// it's reached as every explored link count as a level
@@ -380,7 +370,6 @@ func (c *WebCrawler) Crawl(URLs ...string) {
 		// for completion
 		wg.Add(1)
 		go c.crawlPage(url, &wg, ctx)
-
 	}
 	// Graceful shutdown of workers
 	signalCh := make(chan os.Signal, 1)

@@ -35,8 +35,8 @@ enforcement, a contract that must be fulfilled, the less you have to implement
 to be compliant the better.
 
 For our application it's not strictly required to follow the rule, but for the
-sake of readability and extensibility for future additions we'll stick to the
-rule adding three generic communication interfaces:
+sake of readability and extensibility for future additions we'll stick to it
+by adding three generic communication interfaces:
 
 **messaging/queue.go**
 
@@ -72,3 +72,288 @@ type ProducerConsumerCloser interface {
 	Close()
 }
 ```
+
+From now on these are our gates and pipes to communicate, it'll be possible to
+create multiple different structs, like `RabbitMQ` or `Redis` backed to pass
+around bits from the crawling logic to other clients.
+
+And that's exactly what we're going to do to make it testable, we'll introduce
+a fool-proof struct encapsulating a simple channel as communication backend
+directly inside our test files:
+
+**crawler_test.go**
+```go
+// Package crawler containing the crawling logics and utilities to scrape
+// remote resources
+package crawler
+
+import (
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"reflect"
+	"sync"
+	"testing"
+	"time"
+)
+
+type testQueue struct {
+	bus chan []byte
+}
+
+func (t testQueue) Produce(data []byte) error {
+	t.bus <- data
+	return nil
+}
+
+func (t testQueue) Consume(events chan<- []byte) error {
+	for event := range t.bus {
+		events <- event
+	}
+	return nil
+}
+
+func (t testQueue) Close() {
+	close(t.bus)
+}
+
+func consumeEvents(queue *testQueue) []ParsedResult {
+	wg := sync.WaitGroup{}
+	events := make(chan []byte)
+	results := []ParsedResult{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for e := range events {
+			var res ParsedResult
+			if err := json.Unmarshal(e, &res); err == nil {
+				results = append(results, res)
+			}
+		}
+	}()
+	_ = queue.Consume(events)
+	close(events)
+	wg.Wait()
+	return results
+}
+
+func serverMockWithoutRobotsTxt() *httptest.Server {
+	handler := http.NewServeMux()
+	handler.HandleFunc("/foo", resourceMock(
+		`<head>
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
+		 </head>
+		 <body>
+			<img src="/baz.png">
+			<img src="/stonk">
+			<a href="foo/bar/baz">
+		</body>`,
+	))
+	handler.HandleFunc("/foo/bar/baz", resourceMock(
+		`<head>
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
+			<link rel="canonical" href="/foo/bar/test" />
+		 </head>
+		 <body>
+			<img src="/baz.png">
+			<img src="/stonk">
+		</body>`,
+	))
+	handler.HandleFunc("/foo/bar/test", resourceMock(
+		`<head>
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
+		 </head>
+		 <body>
+			<img src="/stonk">
+		</body>`,
+	))
+
+	server := httptest.NewServer(handler)
+	return server
+}
+
+func resourceMock(content string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(content))
+	}
+}
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
+
+func withMaxDepth(depth int) CrawlerOpt {
+	return func(s *CrawlerSettings) {
+		s.MaxDepth = depth
+	}
+}
+
+func withCrawlingTimeout(timeout time.Duration) CrawlerOpt {
+	return func(s *CrawlerSettings) {
+		s.CrawlingTimeout = timeout
+	}
+}
+
+func TestCrawlPages(t *testing.T) {
+	server := serverMockWithoutRobotsTxt()
+	defer server.Close()
+	testbus := testQueue{make(chan []byte)}
+	results := make(chan []ParsedResult)
+	go func() { results <- consumeEvents(&testbus) }()
+	crawler := New("test-agent", &testbus, withCrawlingTimeout(100*time.Millisecond))
+	crawler.Crawl(server.URL + "/foo")
+	testbus.Close()
+	res := <-results
+	close(results)
+	expected := []ParsedResult{
+		{
+			server.URL + "/foo",
+			[]string{"https://example-page.com/sample-page/", server.URL + "/foo/bar/baz"},
+		},
+		{
+			server.URL + "/foo/bar/baz",
+			[]string{server.URL + "/foo/bar/test"},
+		},
+	}
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf("Crawler#Crawl failed: expected %v got %v", expected, res)
+	}
+}
+
+func TestCrawlPagesRespectingMaxDepth(t *testing.T) {
+	server := serverMockWithoutRobotsTxt()
+	defer server.Close()
+	testbus := testQueue{make(chan []byte)}
+	results := make(chan []ParsedResult)
+	go func() { results <- consumeEvents(&testbus) }()
+	crawler := New("test-agent", &testbus, withCrawlingTimeout(100*time.Millisecond), withMaxDepth(3))
+	crawler.Crawl(server.URL + "/foo")
+	testbus.Close()
+	res := <-results
+	expected := []ParsedResult{
+		{
+			server.URL + "/foo",
+			[]string{"https://example-page.com/sample-page/", server.URL + "/foo/bar/baz"},
+		},
+		{
+			server.URL + "/foo/bar/baz",
+			[]string{server.URL + "/foo/bar/test"},
+		},
+	}
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf("Crawler#Crawl failed: expected %v got %v", expected, res)
+	}
+}
+```
+
+*Note: the only function mocking resources server side is called
+`serverMockWithoutRobotsTxt()`, this is because right now we're not
+considering the existence of a `robots.txt` file on the root of each domain,
+but in the next chapter we'll handle that set of rules as well, discussing
+crawling politeness*
+
+In order to make them pass we need to adapt the `crawlPage` method to use a
+`Producer` implementation to send out every crawled URL, so let's open
+**crawler.go** file and update the `WebCrawler` struct, its constructor and
+add the forwarding code into the main `crawlPage` loop:
+
+```diff
+type WebCrawler struct {
+	// logger is a private logger instance
+	logger *log.Logger
++	// queue is a simple message queue to forward crawling results to other
++	// components of the architecture, decoupling business logic from processing,
++	// storage or presentation layers
++	queue messaging.Producer
+	// settings is a pointer to `CrawlerSettings` containing some crawler
+	// specifications
+	settings *CrawlerSettings
+}
+```
+
+The constructor will be updated as well
+
+```diff
+-func New(userAgent string, opts ...CrawlerOpt) *WebCrawler {
++func New(userAgent string, queue messaging.Producer, opts ...CrawlerOpt) *WebCrawler {
+    ...
+	crawler := &WebCrawler{
+		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
++		queue:    queue,
+		settings: settings,
+	}
+	return crawler
+}
+```
+
+Finally the `crawlPage` private method, we want that after every link has been
+extracted it produce it by using the `Producer` queue:
+
+**crawler.go**
+
+```diff
+func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context.Context) {
+    ...
+    for !stop {
+        ...
+        go func(link *url.URL, stopSentinel bool, w *sync.WaitGroup) {
+            ...
+            // No errors occured, we want to enqueue all scraped links
+            // to the link queue
+            if stopSentinel || foundLinks == nil || len(foundLinks) == 0 {
+                return
+            }
+            atomic.AddInt32(&linkCounter, int32(len(foundLinks)))
++			// Send results from fetch process to the processing queue
++			c.enqueueResults(link, foundLinks)
+            // Enqueue found links for the next cycle
+            linksCh <- foundLinks
+
+        }(link, stop, &fetchWg)
+    }
+	fetchWg.Wait()
+}
+
++// enqueueResults enqueue fetched links through the ProducerConsumer queue in
++// order to be processed (in this case, printe to stdout)
++func (c *WebCrawler) enqueueResults(link *url.URL, foundLinks []*url.URL) {
++	foundLinksStr := []string{}
++	for _, l := range foundLinks {
++		foundLinksStr = append(foundLinksStr, l.String())
++	}
++	payload, _ := json.Marshal(ParsedResult{link.String(), foundLinksStr})
++	if err := c.queue.Produce(payload); err != nil {
++		c.logger.Println("Unable to communicate with message queue:", err)
++	}
++}
+```
+And we're good to go, we should be all green running a go test now:
+
+```sh
+go test -v ./...
+=== RUN   TestCrawlPages
+crawler: 2020/11/16 19:21:31 Crawling done
+--- PASS: TestCrawlPages (1.20s)
+crawler: 2020/11/16 19:21:32 Crawling done
+=== RUN   TestCrawlPagesRespectingMaxDepth
+--- PASS: TestCrawlPagesRespectingMaxDepth (1.07s)
+PASS
+ok  	github.com/codepr/webcrawler	3.495s
+=== RUN   TestStdHttpFetcherFetch
+--- PASS: TestStdHttpFetcherFetch (0.00s)
+=== RUN   TestStdHttpFetcherFetchLinks
+--- PASS: TestStdHttpFetcherFetchLinks (0.00s)
+=== RUN   TestGoqueryParsePage
+--- PASS: TestGoqueryParsePage (0.00s)
+PASS
+ok  	github.com/codepr/webcrawler/fetcher	(cached)
+?   	github.com/codepr/webcrawler/messaging	[no test files]
+```
+
+In the next chapter we're going to explore politeness concept, or how a good
+web crawler should behave while visiting a domain and `robots.txt` rules that
+most of the time are inserted on the root of the site.
