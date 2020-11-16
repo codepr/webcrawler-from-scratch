@@ -19,17 +19,17 @@ chapter by chapter. The repository containing the code is
 [https://github.com/codepr/webcrawler](https://github.com/codepr/webcrawler)
 During the journey we'll touch many system design concepts:
 
-- microservices
-- network unreliability
-- concurrency
-- scalability
-    - consistency patterns
-    - availability patterns
+- Microservices
+- Network unreliability
+- Concurrency
+- Scalability
+    - Consistency patterns
+    - Availability patterns
 
 And more in depth on the topic:
 
-- web crawler main characteristics
-    - politeness
-    - crawling rules
-- reverse indexing services
-- content signatures
+- Web crawler main characteristics
+    - Politeness
+    - Crawling rules
+- Reverse indexing services
+- Content signatures
