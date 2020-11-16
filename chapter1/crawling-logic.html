@@ -629,6 +629,20 @@ domain ends.</p>
 make the business logic less tied to the application and above all make it
 possible to forward crawling results to outside, so that external clients may
 use them without being tightly coupled with the crawler.</p>
+<p>We&apos;ve just added two additional <code>.go</code> files for the <code>crawler</code> package, one for
+unit tests and one for source, this the current project structure so far:</p>
+<pre><code class="lang-sh">tree
+.
+&#x251C;&#x2500;&#x2500; crawler.go
+&#x251C;&#x2500;&#x2500; crawler_test.go
+&#x251C;&#x2500;&#x2500; fetcher
+&#x2502;   &#x251C;&#x2500;&#x2500; fetcher.go
+&#x2502;   &#x251C;&#x2500;&#x2500; fetcher_test.go
+&#x2502;   &#x251C;&#x2500;&#x2500; parser.go
+&#x2502;   &#x2514;&#x2500;&#x2500; parser_test.go
+&#x251C;&#x2500;&#x2500; go.mod
+&#x2514;&#x2500;&#x2500; go.sum
+</code></pre>
 
                                 
                                 </section>
@@ -668,7 +682,7 @@ use them without being tightly coupled with the crawler.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-11-16T11:55:21.267Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T12:44:02.692Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-11-16T13:05:20.662Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T12:44:02.692Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
