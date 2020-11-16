@@ -226,6 +226,17 @@ c := crawler.New("user-agent", withConcurrency(4))
 
 ## Crawling a domain
 
+The core of the crawler component, we want to export just one simple function
+that allows us to start the crawling process on one or more domains,
+practically we can see the application flow as a coordinator-helpers hierarchy
+consisting of two simple functions:
+
+* `Crawl` the only exported function, accepts a variadic number of URL strings
+  and spawn a `crawlPage` goroutine for each of them
+* `crawlPage` private function, contain the core logic, for each URL in the
+  queue extracts every link found and put them into the same queue, starting
+  from the upper-most link passed in by the `Crawl` function
+
 As we already seen, the problem is easily solved recursively, but Go provides
 us tools to avoid the use of recursion which is generally a prerogative of
 functional languages and those that provide tail-recursion optimization (see
@@ -383,3 +394,9 @@ func (c *WebCrawler) Crawl(URLs ...string) {
 	c.logger.Println("Crawling done")
 }
 ```
+
+Although `crawlPage` is admittedly a little complex and there's room for
+improvements, the flow is indeed simple and came out as a variation of the
+previously thought steps:
+
+
