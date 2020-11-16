@@ -16,7 +16,7 @@ on those topics.
 This will be a tutorial on how to build something akin to a raw search engine
 starting from the inner-most component and extending it by adding features
 chapter by chapter. The repository containing the code is
-[https://github.com/codepr/webcrawler](https://github.com/codepr/webcrawler)
+[https://github.com/codepr/webcrawler](https://github.com/codepr/webcrawler).<br>
 During the journey we'll touch many system design concepts:
 
 - Microservices

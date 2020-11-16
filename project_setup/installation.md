@@ -3,7 +3,7 @@
 Go installation is pretty simple and straight-forward,
 [https://golang.org/doc/install](https://golang.org/doc/install) explain each
 simple step to follow for every host platform. Being a Linux junky I'll follow
-the Linux one:
+that one:
 
 1. Download a `.tar.gz`
 

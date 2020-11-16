@@ -7,9 +7,9 @@ explanations about every choice and opinions on developer tools.
 Go will be the language of choice, it's a simple yet very powerful language,
 empowering the user with a straight-forward set of concurrency primitives based
 on cooperative behavior[^1] and sharing-by-communication model through
-channels, with a battery-included standard library and a complete toolchain
-that make it easy to setup new projects, test, benchmark and adoption of
-third-party libraries.
+channels, with a battery-included standard library and a comprehensive
+toolchain that makes it easy to setup new projects, test, benchmark and
+adoption of third-party libraries.
 
 If you're new to the language, it's really easy to learn and fast to become
 productive with, as it's one of the traits that Go creator put the most
