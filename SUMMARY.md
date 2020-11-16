@@ -7,3 +7,4 @@
 * [Web crawler](chapter1/README.md)
     * [Fetch and parse](chapter1/fetcher.md)
     * [Crawling logic](chapter1/crawling-logic.md)
+    * [Introducing a middleware](chapter1/messaging.md)

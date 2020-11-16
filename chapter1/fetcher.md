@@ -66,7 +66,13 @@ func TestGoqueryParsePage(t *testing.T) {
 
 Let's now move on with the implementation, we're going to define a parser
 interface exposing a single method `Parse(string, *io.Reader)([]*url.URL,
-error)`.
+error)`.<br>
+This definition of an interface foreseeing the implementation, is closer to a
+classical OOP style, think about Java usage of interfaces, we're going to
+define a contract to enforce a behavior; but it's not really the best and only
+usage of this language feature.
+
+### Little dissertation over interfaces in Go
 
 One of the strongest features of Go is that there's no need to explicitly
 declare when we want to implement an interface, we just need to implement the
@@ -88,8 +94,13 @@ exposes a method `ReadLine` we can easily declare an interface `ReadLiner` with
 only a method `ReadLine` inside and use either the third-party object (or
 whatever object with a `ReadLine` method) or a newly defined object with the
 `ReadLine` method defined into a simple function `ReadByLine(r ReadLiner)`.
+This is a principle of **accepts interfaces, return structs**, in other words
+if a function signature accepts an interface, then callers have the option to
+pass in any concrete type, just as long as it implements that interface. The
+implication is that interfaces should be declared close to where they're used.<br>
 This is really akin to a duck-typing behavior at compile time, and it's enabled
-by this feature of go.
+by this feature of go, making it, for some aspects, really similar to dynamic
+languages like Python or Ruby.
 
 **fetcher/parser.go**
 
