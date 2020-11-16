@@ -399,4 +399,18 @@ Although `crawlPage` is admittedly a little complex and there's room for
 improvements, the flow is indeed simple and came out as a variation of the
 previously thought steps:
 
+1. enqueue start URL in the channel as a list of 1 element
+2. dequeue the link-list from the queue
+3. for each link in the list
+    * check the ephemeral state of the crawling to see if we already have
+      visited the URL
+    * fetch HTML contents and extracts all links from the page
+    * enqueue every found link into the channel queue
+4. goto 2
 
+Select makes it a little harder to follow as it introduce asynchronicity in the
+flow, but the low number of branches, just two, makes it simple to understand:
+In the second branch it just start a timer everytime "nothing happens" in the
+main channel queue, in other word if no links are found for a determined amount
+of time (`crawlingTimeout`) the loop gets interrupted and the crawling for that
+domain ends.
