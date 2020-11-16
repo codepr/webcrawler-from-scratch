@@ -206,10 +206,14 @@ go test -v ./...
 
 ## Fetching HTML documents
 
+A web crawler operates on the 7th layer, as simple as that, the main
+communication protocol used to fetch outside contents from websites is HTTP,
+so the core component of the `fetcher` package will be an HTTP client.
+
 The next step is the definition of fetching unit tests, what we expect here is
 the possibility to simply fetch a single link, ignoring its content and
 fetching a link extracting all contained links.<br>We're probably going to
-defines 2 interfaces for these tasks, `Fetcher` and `LinkFetcher`.
+defines two interfaces for these tasks, `Fetcher` and `LinkFetcher`.
 
 **fetcher/fetcher\_test.go**
 

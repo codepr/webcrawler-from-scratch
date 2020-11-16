@@ -419,3 +419,20 @@ As of now however, it's difficult to unit-test, we have to find out a way to
 make the business logic less tied to the application and above all make it
 possible to forward crawling results to outside, so that external clients may
 use them without being tightly coupled with the crawler.
+
+We've just added two additional `.go` files for the `crawler` package, one for
+unit tests and one for source, this the current project structure so far:
+
+```sh
+tree
+.
+├── crawler.go
+├── crawler_test.go
+├── fetcher
+│   ├── fetcher.go
+│   ├── fetcher_test.go
+│   ├── parser.go
+│   └── parser_test.go
+├── go.mod
+└── go.sum
+```
