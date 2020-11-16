@@ -386,12 +386,10 @@ also to maintain a pool of connections to a DB or store data on disk</li>
         PolitenessFixedDelay: defaultPolitenessDelay,
         Concurrency:          defaultConcurrency,
     }
-
     crawler := &amp;WebCrawler{
         logger:   log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
         settings: settings,
     }
-
     <span class="hljs-keyword">return</span> crawler
 }
 
@@ -426,17 +424,14 @@ function:</p>
         PolitenessFixedDelay: defaultPolitenessDelay,
         Concurrency:          defaultConcurrency,
     }
-
     <span class="hljs-comment">// Mix in all optionals</span>
     <span class="hljs-keyword">for</span> _, opt := <span class="hljs-keyword">range</span> opts {
         opt(settings)
     }
-
     crawler := &amp;WebCrawler{
         logger:   log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
         settings: settings,
     }
-
     <span class="hljs-keyword">return</span> crawler
 }
 </code></pre>
@@ -486,7 +481,6 @@ main routine</p>
     <span class="hljs-keyword">defer</span> wg.Done()
     fetchClient := fetcher.New(c.settings.UserAgent,
         c.settings.Parser, c.settings.FetchingTimeout)
-
     <span class="hljs-keyword">var</span> (
         <span class="hljs-comment">// semaphore is just a value-less channel used to limit the number of</span>
         <span class="hljs-comment">// concurrent goroutine workers fetching links</span>
@@ -503,7 +497,6 @@ main routine</p>
         <span class="hljs-comment">// links if a timeout occur</span>
         linkCounter <span class="hljs-keyword">int32</span> = <span class="hljs-number">1</span>
     )
-
     <span class="hljs-comment">// Set the concurrency level by using a buffered channel as semaphore</span>
     <span class="hljs-keyword">if</span> c.settings.Concurrency &gt; <span class="hljs-number">0</span> {
         semaphore = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>{}, c.settings.Concurrency)
@@ -516,10 +509,8 @@ main routine</p>
         semaphore = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>{}, <span class="hljs-number">1</span>)
         linksCh = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []*url.URL, <span class="hljs-number">1</span>)
     }
-
     <span class="hljs-comment">// Just a kickstart for the first URL to scrape</span>
     linksCh &lt;- []*url.URL{rootURL}
-
     <span class="hljs-comment">// Every cycle represents a single page crawling, when new anchors are</span>
     <span class="hljs-comment">// found, the counter is increased, making the loop continue till the</span>
     <span class="hljs-comment">// end of links</span>
@@ -527,8 +518,8 @@ main routine</p>
         <span class="hljs-keyword">select</span> {
         <span class="hljs-keyword">case</span> links := &lt;-linksCh:
             <span class="hljs-keyword">for</span> _, link := <span class="hljs-keyword">range</span> links {
-                <span class="hljs-comment">// Skip already visited links or disallowed ones by the robots.txt rules</span>
-                <span class="hljs-keyword">if</span> seen[link.String()] || !crawlingRules.Allowed(link) {
+                <span class="hljs-comment">// Skip already visited links</span>
+                <span class="hljs-keyword">if</span> seen[link.String()] {
                     atomic.AddInt32(&amp;linkCounter, <span class="hljs-number">-1</span>)
                     <span class="hljs-keyword">continue</span>
                 }
@@ -564,7 +555,6 @@ main routine</p>
                     atomic.AddInt32(&amp;linkCounter, <span class="hljs-keyword">int32</span>(<span class="hljs-built_in">len</span>(foundLinks)))
                     <span class="hljs-comment">// Enqueue found links for the next cycle</span>
                     linksCh &lt;- foundLinks
-
                 }(link, stop, &amp;fetchWg)
                 <span class="hljs-comment">// We want to check if a level limit is set and in case, check if</span>
                 <span class="hljs-comment">// it&apos;s reached as every explored link count as a level</span>
@@ -605,7 +595,6 @@ main routine</p>
         <span class="hljs-comment">// for completion</span>
         wg.Add(<span class="hljs-number">1</span>)
         <span class="hljs-keyword">go</span> c.crawlPage(url, &amp;wg, ctx)
-
     }
     <span class="hljs-comment">// Graceful shutdown of workers</span>
     signalCh := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> os.Signal, <span class="hljs-number">1</span>)
@@ -701,7 +690,7 @@ unit tests and one for source, this the current project structure so far:</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"next":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-11-16T13:05:20.662Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T12:44:02.692Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"next":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-11-16T18:19:26.969Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T12:44:02.692Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

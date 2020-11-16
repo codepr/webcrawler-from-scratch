@@ -272,8 +272,8 @@ little as possible, and it really makes sense as every interface defines an
 enforcement, a contract that must be fulfilled, the less you have to implement
 to be compliant the better.</p>
 <p>For our application it&apos;s not strictly required to follow the rule, but for the
-sake of readability and extensibility for future additions we&apos;ll stick to the
-rule adding three generic communication interfaces:</p>
+sake of readability and extensibility for future additions we&apos;ll stick to it
+by adding three generic communication interfaces:</p>
 <p><strong>messaging/queue.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// Package messaging contains middleware for communication with decoupled</span>
 <span class="hljs-comment">// services, could be RabbitMQ drivers as well as kafka or redis</span>
@@ -306,6 +306,273 @@ rule adding three generic communication interfaces:</p>
     Close()
 }
 </code></pre>
+<p>From now on these are our gates and pipes to communicate, it&apos;ll be possible to
+create multiple different structs, like <code>RabbitMQ</code> or <code>Redis</code> backed to pass
+around bits from the crawling logic to other clients.</p>
+<p>And that&apos;s exactly what we&apos;re going to do to make it testable, we&apos;ll introduce
+a fool-proof struct encapsulating a simple channel as communication backend
+directly inside our test files:</p>
+<p><strong>crawler_test.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// Package crawler containing the crawling logics and utilities to scrape</span>
+<span class="hljs-comment">// remote resources</span>
+<span class="hljs-keyword">package</span> crawler
+
+<span class="hljs-keyword">import</span> (
+    <span class="hljs-string">&quot;encoding/json&quot;</span>
+    <span class="hljs-string">&quot;io/ioutil&quot;</span>
+    <span class="hljs-string">&quot;log&quot;</span>
+    <span class="hljs-string">&quot;net/http&quot;</span>
+    <span class="hljs-string">&quot;net/http/httptest&quot;</span>
+    <span class="hljs-string">&quot;os&quot;</span>
+    <span class="hljs-string">&quot;reflect&quot;</span>
+    <span class="hljs-string">&quot;sync&quot;</span>
+    <span class="hljs-string">&quot;testing&quot;</span>
+    <span class="hljs-string">&quot;time&quot;</span>
+)
+
+<span class="hljs-keyword">type</span> testQueue <span class="hljs-keyword">struct</span> {
+    bus <span class="hljs-keyword">chan</span> []<span class="hljs-keyword">byte</span>
+}
+
+<span class="hljs-keyword">func</span> (t testQueue) Produce(data []<span class="hljs-keyword">byte</span>) error {
+    t.bus &lt;- data
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>
+}
+
+<span class="hljs-keyword">func</span> (t testQueue) Consume(events <span class="hljs-keyword">chan</span>&lt;- []<span class="hljs-keyword">byte</span>) error {
+    <span class="hljs-keyword">for</span> event := <span class="hljs-keyword">range</span> t.bus {
+        events &lt;- event
+    }
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>
+}
+
+<span class="hljs-keyword">func</span> (t testQueue) Close() {
+    <span class="hljs-built_in">close</span>(t.bus)
+}
+
+<span class="hljs-keyword">func</span> consumeEvents(queue *testQueue) []ParsedResult {
+    wg := sync.WaitGroup{}
+    events := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []<span class="hljs-keyword">byte</span>)
+    results := []ParsedResult{}
+    wg.Add(<span class="hljs-number">1</span>)
+    <span class="hljs-keyword">go</span> <span class="hljs-keyword">func</span>() {
+        <span class="hljs-keyword">defer</span> wg.Done()
+        <span class="hljs-keyword">for</span> e := <span class="hljs-keyword">range</span> events {
+            <span class="hljs-keyword">var</span> res ParsedResult
+            <span class="hljs-keyword">if</span> err := json.Unmarshal(e, &amp;res); err == <span class="hljs-literal">nil</span> {
+                results = <span class="hljs-built_in">append</span>(results, res)
+            }
+        }
+    }()
+    _ = queue.Consume(events)
+    <span class="hljs-built_in">close</span>(events)
+    wg.Wait()
+    <span class="hljs-keyword">return</span> results
+}
+
+<span class="hljs-keyword">func</span> serverMockWithoutRobotsTxt() *httptest.Server {
+    handler := http.NewServeMux()
+    handler.HandleFunc(<span class="hljs-string">&quot;/foo&quot;</span>, resourceMock(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example-page.com/sample-page/&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;img src=&quot;/baz.png&quot;&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+            &lt;a href=&quot;foo/bar/baz&quot;&gt;
+        &lt;/body&gt;`</span>,
+    ))
+    handler.HandleFunc(<span class="hljs-string">&quot;/foo/bar/baz&quot;</span>, resourceMock(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example-page.com/sample-page/&quot; /&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;/foo/bar/test&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;img src=&quot;/baz.png&quot;&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+        &lt;/body&gt;`</span>,
+    ))
+    handler.HandleFunc(<span class="hljs-string">&quot;/foo/bar/test&quot;</span>, resourceMock(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example-page.com/sample-page/&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+        &lt;/body&gt;`</span>,
+    ))
+
+    server := httptest.NewServer(handler)
+    <span class="hljs-keyword">return</span> server
+}
+
+<span class="hljs-keyword">func</span> resourceMock(content <span class="hljs-keyword">string</span>) http.HandlerFunc {
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">func</span>(w http.ResponseWriter, r *http.Request) {
+        _, _ = w.Write([]<span class="hljs-keyword">byte</span>(content))
+    }
+}
+
+<span class="hljs-keyword">func</span> TestMain(m *testing.M) {
+    log.SetOutput(ioutil.Discard)
+    os.Exit(m.Run())
+}
+
+<span class="hljs-keyword">func</span> withMaxDepth(depth <span class="hljs-keyword">int</span>) CrawlerOpt {
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">func</span>(s *CrawlerSettings) {
+        s.MaxDepth = depth
+    }
+}
+
+<span class="hljs-keyword">func</span> withCrawlingTimeout(timeout time.Duration) CrawlerOpt {
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">func</span>(s *CrawlerSettings) {
+        s.CrawlingTimeout = timeout
+    }
+}
+
+<span class="hljs-keyword">func</span> TestCrawlPages(t *testing.T) {
+    server := serverMockWithoutRobotsTxt()
+    <span class="hljs-keyword">defer</span> server.Close()
+    testbus := testQueue{<span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []<span class="hljs-keyword">byte</span>)}
+    results := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []ParsedResult)
+    <span class="hljs-keyword">go</span> <span class="hljs-keyword">func</span>() { results &lt;- consumeEvents(&amp;testbus) }()
+    crawler := New(<span class="hljs-string">&quot;test-agent&quot;</span>, &amp;testbus, withCrawlingTimeout(<span class="hljs-number">100</span>*time.Millisecond))
+    crawler.Crawl(server.URL + <span class="hljs-string">&quot;/foo&quot;</span>)
+    testbus.Close()
+    res := &lt;-results
+    <span class="hljs-built_in">close</span>(results)
+    expected := []ParsedResult{
+        {
+            server.URL + <span class="hljs-string">&quot;/foo&quot;</span>,
+            []<span class="hljs-keyword">string</span>{<span class="hljs-string">&quot;https://example-page.com/sample-page/&quot;</span>, server.URL + <span class="hljs-string">&quot;/foo/bar/baz&quot;</span>},
+        },
+        {
+            server.URL + <span class="hljs-string">&quot;/foo/bar/baz&quot;</span>,
+            []<span class="hljs-keyword">string</span>{server.URL + <span class="hljs-string">&quot;/foo/bar/test&quot;</span>},
+        },
+    }
+    <span class="hljs-keyword">if</span> !reflect.DeepEqual(res, expected) {
+        t.Errorf(<span class="hljs-string">&quot;Crawler#Crawl failed: expected %v got %v&quot;</span>, expected, res)
+    }
+}
+
+<span class="hljs-keyword">func</span> TestCrawlPagesRespectingMaxDepth(t *testing.T) {
+    server := serverMockWithoutRobotsTxt()
+    <span class="hljs-keyword">defer</span> server.Close()
+    testbus := testQueue{<span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []<span class="hljs-keyword">byte</span>)}
+    results := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []ParsedResult)
+    <span class="hljs-keyword">go</span> <span class="hljs-keyword">func</span>() { results &lt;- consumeEvents(&amp;testbus) }()
+    crawler := New(<span class="hljs-string">&quot;test-agent&quot;</span>, &amp;testbus, withCrawlingTimeout(<span class="hljs-number">100</span>*time.Millisecond), withMaxDepth(<span class="hljs-number">3</span>))
+    crawler.Crawl(server.URL + <span class="hljs-string">&quot;/foo&quot;</span>)
+    testbus.Close()
+    res := &lt;-results
+    expected := []ParsedResult{
+        {
+            server.URL + <span class="hljs-string">&quot;/foo&quot;</span>,
+            []<span class="hljs-keyword">string</span>{<span class="hljs-string">&quot;https://example-page.com/sample-page/&quot;</span>, server.URL + <span class="hljs-string">&quot;/foo/bar/baz&quot;</span>},
+        },
+        {
+            server.URL + <span class="hljs-string">&quot;/foo/bar/baz&quot;</span>,
+            []<span class="hljs-keyword">string</span>{server.URL + <span class="hljs-string">&quot;/foo/bar/test&quot;</span>},
+        },
+    }
+    <span class="hljs-keyword">if</span> !reflect.DeepEqual(res, expected) {
+        t.Errorf(<span class="hljs-string">&quot;Crawler#Crawl failed: expected %v got %v&quot;</span>, expected, res)
+    }
+}
+</code></pre>
+<p><em>Note: the only function mocking resources server side is called
+<code>serverMockWithoutRobotsTxt()</code>, this is because right now we&apos;re not
+considering the existence of a <code>robots.txt</code> file on the root of each domain,
+but in the next chapter we&apos;ll handle that set of rules as well, discussing
+crawling politeness</em></p>
+<p>In order to make them pass we need to adapt the <code>crawlPage</code> method to use a
+<code>Producer</code> implementation to send out every crawled URL, so let&apos;s open
+<strong>crawler.go</strong> file and update the <code>WebCrawler</code> struct, its constructor and
+add the forwarding code into the main <code>crawlPage</code> loop:</p>
+<pre><code class="lang-diff">type WebCrawler struct {
+    // logger is a private logger instance
+    logger *log.Logger
+<span class="hljs-addition">+    // queue is a simple message queue to forward crawling results to other</span>
+<span class="hljs-addition">+    // components of the architecture, decoupling business logic from processing,</span>
+<span class="hljs-addition">+    // storage or presentation layers</span>
+<span class="hljs-addition">+    queue messaging.Producer</span>
+    // settings is a pointer to `CrawlerSettings` containing some crawler
+    // specifications
+    settings *CrawlerSettings
+}
+</code></pre>
+<p>The constructor will be updated as well</p>
+<pre><code class="lang-diff"><span class="hljs-deletion">-func New(userAgent string, opts ...CrawlerOpt) *WebCrawler {</span>
+<span class="hljs-addition">+func New(userAgent string, queue messaging.Producer, opts ...CrawlerOpt) *WebCrawler {</span>
+    ...
+    crawler := &amp;WebCrawler{
+        logger:   log.New(os.Stderr, &quot;crawler: &quot;, log.LstdFlags),
+<span class="hljs-addition">+        queue:    queue,</span>
+        settings: settings,
+    }
+    return crawler
+}
+</code></pre>
+<p>Finally the <code>crawlPage</code> private method, we want that after every link has been
+extracted it produce it by using the <code>Producer</code> queue:</p>
+<p><strong>crawler.go</strong></p>
+<pre><code class="lang-diff">func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context.Context) {
+    ...
+    for !stop {
+        ...
+        go func(link *url.URL, stopSentinel bool, w *sync.WaitGroup) {
+            ...
+            // No errors occured, we want to enqueue all scraped links
+            // to the link queue
+            if stopSentinel || foundLinks == nil || len(foundLinks) == 0 {
+                return
+            }
+            atomic.AddInt32(&amp;linkCounter, int32(len(foundLinks)))
+<span class="hljs-addition">+            // Send results from fetch process to the processing queue</span>
+<span class="hljs-addition">+            c.enqueueResults(link, foundLinks)</span>
+            // Enqueue found links for the next cycle
+            linksCh &lt;- foundLinks
+
+        }(link, stop, &amp;fetchWg)
+    }
+    fetchWg.Wait()
+}
+
+<span class="hljs-addition">+// enqueueResults enqueue fetched links through the ProducerConsumer queue in</span>
+<span class="hljs-addition">+// order to be processed (in this case, printe to stdout)</span>
+<span class="hljs-addition">+func (c *WebCrawler) enqueueResults(link *url.URL, foundLinks []*url.URL) {</span>
+<span class="hljs-addition">+    foundLinksStr := []string{}</span>
+<span class="hljs-addition">+    for _, l := range foundLinks {</span>
+<span class="hljs-addition">+        foundLinksStr = append(foundLinksStr, l.String())</span>
+<span class="hljs-addition">+    }</span>
+<span class="hljs-addition">+    payload, _ := json.Marshal(ParsedResult{link.String(), foundLinksStr})</span>
+<span class="hljs-addition">+    if err := c.queue.Produce(payload); err != nil {</span>
+<span class="hljs-addition">+        c.logger.Println(&quot;Unable to communicate with message queue:&quot;, err)</span>
+<span class="hljs-addition">+    }</span>
+<span class="hljs-addition">+}</span>
+</code></pre>
+<p>And we&apos;re good to go, we should be all green running a go test now:</p>
+<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
+=== RUN   TestCrawlPages
+crawler: 2020/11/16 19:21:31 Crawling <span class="hljs-keyword">done</span>
+--- PASS: TestCrawlPages (1.20s)
+crawler: 2020/11/16 19:21:32 Crawling <span class="hljs-keyword">done</span>
+=== RUN   TestCrawlPagesRespectingMaxDepth
+--- PASS: TestCrawlPagesRespectingMaxDepth (1.07s)
+PASS
+ok      github.com/codepr/webcrawler    3.495s
+=== RUN   TestStdHttpFetcherFetch
+--- PASS: TestStdHttpFetcherFetch (0.00s)
+=== RUN   TestStdHttpFetcherFetchLinks
+--- PASS: TestStdHttpFetcherFetchLinks (0.00s)
+=== RUN   TestGoqueryParsePage
+--- PASS: TestGoqueryParsePage (0.00s)
+PASS
+ok      github.com/codepr/webcrawler/fetcher    (cached)
+?       github.com/codepr/webcrawler/messaging    [no <span class="hljs-built_in">test</span> files]
+</code></pre>
+<p>In the next chapter we&apos;re going to explore politeness concept, or how a good
+web crawler should behave while visiting a domain and <code>robots.txt</code> rules that
+most of the time are inserted on the root of the site.</p>
 
                                 
                                 </section>
@@ -345,7 +612,7 @@ rule adding three generic communication interfaces:</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-16T17:41:05.033Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T12:44:02.692Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-16T18:35:15.053Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-16T12:44:02.692Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
