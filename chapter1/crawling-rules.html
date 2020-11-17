@@ -540,7 +540,16 @@ configured at the start of the application, basically following this formula:</p
 }
 </code></pre>
 <p>We should update <strong>crawler.go</strong> file with the crawling rules to be applied
-during the crawling process of a domain, in the <code>crawlPage</code> private function</p>
+during the crawling process of a domain, in the <code>crawlPage</code> private function.
+What we need to do is:</p>
+<ul>
+<li>Create a <code>CrawlingRules</code> object before the start of crawling loop</li>
+<li>At the skip check (for already visited links) we add also the allowance check</li>
+<li>We use the call <code>CrawlingRules#CrawlDelay</code> to set the sleeping time on each
+worker goroutine</li>
+<li>We make use of the response time of the <code>Fetcher#FetchLinks</code> call to update
+the last call delay on the crawling rules</li>
+</ul>
 <pre><code class="lang-diff">func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context.Context) {
     ...
     // Just a kickstart for the first URL to scrape
@@ -582,7 +591,8 @@ during the crawling process of a domain, in the <code>crawlPage</code> private f
                     // OOM (or banned from the website) really fast
                     semaphore &lt;- struct{}{}
                     defer func() {
-                        time.Sleep(crawlingRules.CrawlDelay())
+<span class="hljs-deletion">-                       time.Sleep(c.settings.PolitenessFixedDelay)</span>
+<span class="hljs-addition">+                        time.Sleep(crawlingRules.CrawlDelay())</span>
                         &lt;-semaphore
                     }()
                     // We fetch the current link here and parse HTML for children links
@@ -600,9 +610,9 @@ during the crawling process of a domain, in the <code>crawlPage</code> private f
         ...
 }
 </code></pre>
-<p>Before giving the usual check on unit tests, hoping that nothing broke, we can
-update also <strong>crawler_test.go</strong> file with some more test cases, to make sure
-that our <code>CrawlingRules</code> object do his job correctly:</p>
+<p>Before giving the usual check on unit tests, hoping that nothing has been
+broken, we can update also <strong>crawler_test.go</strong> file with some more test cases,
+to make sure that our <code>CrawlingRules</code> object do his job correctly:</p>
 <pre><code class="lang-go"><span class="hljs-keyword">func</span> serverMockWithRobotsTxt() *httptest.Server {
     handler := http.NewServeMux()
     handler.HandleFunc(<span class="hljs-string">&quot;/robots.txt&quot;</span>, resourceMock(
@@ -638,7 +648,6 @@ that our <code>CrawlingRules</code> object do his job correctly:</p>
             &lt;img src=&quot;/stonk&quot;&gt;
         &lt;/body&gt;`</span>,
     ))
-
     server := httptest.NewServer(handler)
     <span class="hljs-keyword">return</span> server
 }
@@ -736,7 +745,7 @@ ok      github.com/codepr/webcrawler/fetcher    (cached)
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-17T18:01:32.590Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T18:01:40.907Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-17T18:09:40.085Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T18:01:40.907Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
