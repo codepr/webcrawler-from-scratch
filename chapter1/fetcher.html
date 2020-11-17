@@ -492,7 +492,6 @@ defines two interfaces for these tasks, <code>Fetcher</code> and <code>LinkFetch
 <span class="hljs-keyword">func</span> serverMock() *httptest.Server {
     handler := http.NewServeMux()
     handler.HandleFunc(<span class="hljs-string">&quot;/foo/bar&quot;</span>, resourceMock)
-
     server := httptest.NewServer(handler)
     <span class="hljs-keyword">return</span> server
 }
@@ -610,7 +609,6 @@ to trace when something like that happens.</em></p>
 <span class="hljs-comment">// toward an URL.</span>
 <span class="hljs-comment">// It returns an `*http.Response` or any error occured during the call.</span>
 <span class="hljs-keyword">func</span> (f stdHttpFetcher) Fetch(url <span class="hljs-keyword">string</span>) (time.Duration, *http.Response, error) {
-
     req, err := http.NewRequest(<span class="hljs-string">&quot;GET&quot;</span>, url, <span class="hljs-literal">nil</span>)
     <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
         <span class="hljs-keyword">return</span> time.Duration(<span class="hljs-number">0</span>), <span class="hljs-literal">nil</span>, err
@@ -662,13 +660,11 @@ useful later for calculating a politeness delay during the crawling process</em>
     }
     <span class="hljs-comment">// Extract base domain from the url</span>
     baseDomain := parseStartURL(targetURL)
-
     elapsed, resp, err := f.Fetch(targetURL)
     <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> || resp.StatusCode &gt;= http.StatusBadRequest {
         <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: %w&quot;</span>, targetURL, err)
     }
     <span class="hljs-keyword">defer</span> resp.Body.Close()
-
     links, err := f.parser.Parse(baseDomain, resp.Body)
     <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
         <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: %w&quot;</span>, targetURL, err)
@@ -744,7 +740,7 @@ ok      webcrawler/fetcher    0.006s
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Web crawler","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-17T20:27:37.581Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Web crawler","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-17T20:41:15.282Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
