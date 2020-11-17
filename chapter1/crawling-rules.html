@@ -264,9 +264,9 @@ follow</li>
 <li>Respect the website behavior, expressed by HTTP responses to each call</li>
 </ul>
 <p>Conceptually it&apos;s a set of well-manner rules, would you ever enter in a
-stranger house and start opening all his rooms, fridges and wardrobes or hell,
-use their bathroom without asking? The least that can happen is that you&apos;ll
-end up banned with a restraining injunction towards that place. And it&apos;s
+stranger&apos;s house and start opening all his rooms, fridges and wardrobes or
+hell, use their bathroom without asking? The least that can happen is that
+you&apos;ll end up banned with a restraining injunction towards that place. And it&apos;s
 exactly what happens with web crawlers that do not respect well-manner rules.</p>
 <p>Generally most domains put a file named <code>robots.txt</code> in the root of their
 website which contains these rules, meant exactly for web crawlers and bots,
@@ -383,6 +383,18 @@ time, and that&apos;s exactly where we want to guard against concurrent access,
 after each call we&apos;d like to update the last call delay, but also let other
 workers access it if needed to delay their next call, so we&apos;re going to need
 a full lock on update (write) and just a read lock on read.</p>
+<p>The <code>CrawlingRules</code> object as we designed it will expose four methods:</p>
+<ul>
+<li><code>GetRobotsTxtGroup(userAgent string, domain *url.URL) bool</code>, tries to
+retrieve the <code>robots.txt</code> file and parse it from the domain root, return
+<code>true</code> if a valid file is found</li>
+<li><code>Allowed(url *url.URL) bool</code>, return the validity of an URL according to the
+rules, <code>true</code> means that it can be crawled</li>
+<li><code>UpdateLastDelay(lastResponseTime time.Duration)</code> just update the last delay
+according with the latest response time</li>
+<li><code>CrawlDelay() time.Duration</code> return the crawling delay to be applied for the
+next HTTP call</li>
+</ul>
 <p><strong>crawlingrules.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// Package crawler containing the crawling logics and utilities to scrape</span>
 <span class="hljs-comment">// remote resources on the web</span>
@@ -442,7 +454,44 @@ a full lock on update (write) and just a read lock on read.</p>
     <span class="hljs-keyword">return</span> True
 }
 
-<span class="hljs-comment">// CrawlDelay return the delay to be respected for the next request on a same</span>
+<span class="hljs-comment">// GetRobotsTxtGroup tryes to fetch the robots.txt from the domain and parse</span>
+<span class="hljs-comment">// it. Returns a boolean based on the success of the process.</span>
+<span class="hljs-keyword">func</span> (r *CrawlingRules) GetRobotsTxtGroup(userAgent <span class="hljs-keyword">string</span>, domain *url.URL) <span class="hljs-keyword">bool</span> {
+    f := fetcher.New(userAgent, <span class="hljs-literal">nil</span>, <span class="hljs-number">10</span>*time.Second)
+    u, _ := url.Parse(robotsTxtPath)
+    targetURL := domain.ResolveReference(u)
+    <span class="hljs-comment">// Try to fetch the robots.txt file</span>
+    _, res, err := f.Fetch(targetURL.String())
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> || res.StatusCode == http.StatusNotFound {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    }
+    body, err := robotstxt.FromResponse(res)
+    <span class="hljs-comment">// If robots data cannot be parsed, will return nil, which will allow access by default.</span>
+    <span class="hljs-comment">// Reasonable, since by default no robots.txt means full access, so invalid</span>
+    <span class="hljs-comment">// robots.txt is similar behavior.</span>
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    }
+    r.robotsGroup = body.FindGroup(userAgent)
+    <span class="hljs-keyword">return</span> r.robotsGroup != <span class="hljs-literal">nil</span>
+}
+</code></pre>
+<p>Here is where we need the <code>Fetcher</code> once again, in <code>GetRobotsTxtGroup</code> it&apos;s
+used to retrieve the <code>robots.txt</code>, generally located in the root at
+domain:port/robots.txt.</p>
+<p>The crawling delay can be designed in a moltitude of ways, we opt for a way
+that should favor the server reaction time over the <code>politenessDelay</code> that&apos;s
+configured at the start of the application, basically following this formula:</p>
+<pre><code class="lang-python">delay = max(random.randrange(politeness_delay*<span class="hljs-number">0.5</span>, politeness_delay*<span class="hljs-number">1.5</span>), robotstxt_delay, last_response**<span class="hljs-number">2</span>)
+</code></pre>
+<p>The maximum value between</p>
+<ul>
+<li><code>robots.txt</code> delay</li>
+<li>power of 2 of last response delay in seconds</li>
+<li>random value x for <code>politenessDelay</code> * 0.5 &lt;= x &lt;= <code>politenessDelay</code> * 1.5</li>
+</ul>
+<p><strong>crawlingrules.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// CrawlDelay return the delay to be respected for the next request on a same</span>
 <span class="hljs-comment">// domain. It chooses from 3 different possible delays, the most important one</span>
 <span class="hljs-comment">// is the one defined by the robots.txt of the domain, then it proceeds</span>
 <span class="hljs-comment">// generating a random delay based on the last request response time and a</span>
@@ -481,28 +530,6 @@ a full lock on update (write) and just a read lock on read.</p>
     r.rwMutex.Unlock()
 }
 
-<span class="hljs-comment">// GetRobotsTxtGroup tryes to fetch the robots.txt from the domain and parse</span>
-<span class="hljs-comment">// it. Returns a boolean based on the success of the process.</span>
-<span class="hljs-keyword">func</span> (r *CrawlingRules) GetRobotsTxtGroup(userAgent <span class="hljs-keyword">string</span>, domain *url.URL) <span class="hljs-keyword">bool</span> {
-    f := fetcher.New(userAgent, <span class="hljs-literal">nil</span>, <span class="hljs-number">10</span>*time.Second)
-    u, _ := url.Parse(robotsTxtPath)
-    targetURL := domain.ResolveReference(u)
-    <span class="hljs-comment">// Try to fetch the robots.txt file</span>
-    _, res, err := f.Fetch(targetURL.String())
-    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> || res.StatusCode == http.StatusNotFound {
-        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
-    }
-    body, err := robotstxt.FromResponse(res)
-    <span class="hljs-comment">// If robots data cannot be parsed, will return nil, which will allow access by default.</span>
-    <span class="hljs-comment">// Reasonable, since by default no robots.txt means full access, so invalid</span>
-    <span class="hljs-comment">// robots.txt is similar behavior.</span>
-    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
-        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
-    }
-    r.robotsGroup = body.FindGroup(userAgent)
-    <span class="hljs-keyword">return</span> r.robotsGroup != <span class="hljs-literal">nil</span>
-}
-
 <span class="hljs-comment">// Return a random value between 1.5*value and 0.5*value</span>
 <span class="hljs-keyword">func</span> randDelay(value <span class="hljs-keyword">int64</span>) time.Duration {
     <span class="hljs-keyword">if</span> value == <span class="hljs-number">0</span> {
@@ -511,6 +538,164 @@ a full lock on update (write) and just a read lock on read.</p>
     max, min := <span class="hljs-number">1.5</span>*<span class="hljs-keyword">float64</span>(value), <span class="hljs-number">0.5</span>*<span class="hljs-keyword">float64</span>(value)
     <span class="hljs-keyword">return</span> time.Duration(rand.Int63n(<span class="hljs-keyword">int64</span>(max-min)) + <span class="hljs-keyword">int64</span>(max))
 }
+</code></pre>
+<p>We should update <strong>crawler.go</strong> file with the crawling rules to be applied
+during the crawling process of a domain, in the <code>crawlPage</code> private function</p>
+<pre><code class="lang-diff">func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context.Context) {
+    ...
+    // Just a kickstart for the first URL to scrape
+    linksCh &lt;- []*url.URL{rootURL}
+<span class="hljs-addition">+   // We try to fetch a robots.txt rule to follow, being polite to the</span>
+<span class="hljs-addition">+    // domain</span>
+<span class="hljs-addition">+    crawlingRules := NewCrawlingRules(rootURL, c.settings.PolitenessFixedDelay)</span>
+<span class="hljs-addition">+    if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {</span>
+<span class="hljs-addition">+        log.Printf(&quot;Found a valid %s/robots.txt&quot;, rootURL.Host)</span>
+<span class="hljs-addition">+    } else {</span>
+<span class="hljs-addition">+        c.logger.Printf(&quot;No valid %s/robots.txt found&quot;, rootURL.Host)</span>
+<span class="hljs-addition">+    }</span>
+
+    // Every cycle represents a single page crawling, when new anchors are
+    // found, the counter is increased, making the loop continue till the
+    // end of links
+    for !stop {
+        select {
+        case links := &lt;-linksCh:
+            for _, link := range links {
+                // Skip already visited links or disallowed ones by the robots.txt rules
+<span class="hljs-deletion">-                if seen[link.String()] {</span>
+<span class="hljs-addition">+                if seen[link.String()] || !crawlingRules.Allowed(link) {</span>
+                    atomic.AddInt32(&amp;linkCounter, -1)
+                    continue
+                }
+                seen[link.String()] = true
+                // Spawn a goroutine to fetch the link, throttling by
+                // concurrency argument on the semaphore will take care of the
+                // concurrent number of goroutine.
+                fetchWg.Add(1)
+                go func(link *url.URL, stopSentinel bool, w *sync.WaitGroup) {
+                    defer w.Done()
+                    defer atomic.AddInt32(&amp;linkCounter, -1)
+                    // 0 concurrency level means we serialize calls as
+                    // goroutines are cheap but not that cheap (around 2-5 kb
+                    // each, 1 million links = ~4/5 GB ram), by allowing for
+                    // unlimited number of workers, potentially we could run
+                    // OOM (or banned from the website) really fast
+                    semaphore &lt;- struct{}{}
+                    defer func() {
+                        time.Sleep(crawlingRules.CrawlDelay())
+                        &lt;-semaphore
+                    }()
+                    // We fetch the current link here and parse HTML for children links
+                    responseTime, foundLinks, err := fetchClient.FetchLinks(link.String())
+<span class="hljs-addition">+                    crawlingRules.UpdateLastDelay(responseTime)</span>
+                    if err != nil {
+                        c.logger.Println(err)
+                        return
+                    }
+                    ...
+                }
+                ...
+            }
+        }
+        ...
+}
+</code></pre>
+<p>Before giving the usual check on unit tests, hoping that nothing broke, we can
+update also <strong>crawler_test.go</strong> file with some more test cases, to make sure
+that our <code>CrawlingRules</code> object do his job correctly:</p>
+<pre><code class="lang-go"><span class="hljs-keyword">func</span> serverMockWithRobotsTxt() *httptest.Server {
+    handler := http.NewServeMux()
+    handler.HandleFunc(<span class="hljs-string">&quot;/robots.txt&quot;</span>, resourceMock(
+        <span class="hljs-string">`User-agent: *
+    Disallow: */test
+    Crawl-delay: 1`</span>,
+    ))
+    handler.HandleFunc(<span class="hljs-string">&quot;/&quot;</span>, resourceMock(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example-page.com/sample-page/&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;img src=&quot;/baz.png&quot;&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+            &lt;a href=&quot;foo/bar/baz&quot;&gt;
+        &lt;/body&gt;`</span>,
+    ))
+    handler.HandleFunc(<span class="hljs-string">&quot;/foo/bar/baz&quot;</span>, resourceMock(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example-page.com/sample-page/&quot; /&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;/foo/bar/test&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;img src=&quot;/baz.png&quot;&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+        &lt;/body&gt;`</span>,
+    ))
+    handler.HandleFunc(<span class="hljs-string">&quot;/foo/bar/test&quot;</span>, resourceMock(
+        <span class="hljs-string">`&lt;head&gt;
+            &lt;link rel=&quot;canonical&quot; href=&quot;https://example-page.com/sample-page/&quot; /&gt;
+         &lt;/head&gt;
+         &lt;body&gt;
+            &lt;img src=&quot;/stonk&quot;&gt;
+        &lt;/body&gt;`</span>,
+    ))
+
+    server := httptest.NewServer(handler)
+    <span class="hljs-keyword">return</span> server
+}
+
+<span class="hljs-keyword">func</span> TestCrawlPagesRespectingRobotsTxt(t *testing.T) {
+    server := serverMockWithRobotsTxt()
+    <span class="hljs-keyword">defer</span> server.Close()
+    testbus := testQueue{<span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []<span class="hljs-keyword">byte</span>)}
+    results := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> []ParsedResult)
+    <span class="hljs-keyword">go</span> <span class="hljs-keyword">func</span>() { results &lt;- consumeEvents(&amp;testbus) }()
+    crawler := New(<span class="hljs-string">&quot;test-agent&quot;</span>, &amp;testbus, withCrawlingTimeout(<span class="hljs-number">100</span>*time.Millisecond))
+    crawler.Crawl(server.URL)
+    testbus.Close()
+    res := &lt;-results
+    expected := []ParsedResult{
+        {
+            server.URL,
+            []<span class="hljs-keyword">string</span>{<span class="hljs-string">&quot;https://example-page.com/sample-page/&quot;</span>, server.URL + <span class="hljs-string">&quot;/foo/bar/baz&quot;</span>},
+        },
+        {
+            server.URL + <span class="hljs-string">&quot;/foo/bar/baz&quot;</span>,
+            []<span class="hljs-keyword">string</span>{server.URL + <span class="hljs-string">&quot;/foo/bar/test&quot;</span>},
+        },
+    }
+    <span class="hljs-keyword">if</span> !reflect.DeepEqual(res, expected) {
+        t.Errorf(<span class="hljs-string">&quot;Crawler#Crawl failed: expected %v got %v&quot;</span>, expected, res)
+    }
+}
+</code></pre>
+<p>Now this should be the result of every unit test written so far:</p>
+<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
+=== RUN   TestCrawlPages
+crawler: 2020/11/16 19:21:30 No valid 127.0.0.1:32855/robots.txt found
+crawler: 2020/11/16 19:21:31 Crawling <span class="hljs-keyword">done</span>
+--- PASS: TestCrawlPages (1.20s)
+=== RUN   TestCrawlPagesRespectingRobotsTxt
+crawler: 2020/11/16 19:21:32 Crawling <span class="hljs-keyword">done</span>
+--- PASS: TestCrawlPagesRespectingRobotsTxt (1.21s)
+=== RUN   TestCrawlPagesRespectingMaxDepth
+crawler: 2020/11/16 19:21:32 No valid 127.0.0.1:42011/robots.txt found
+crawler: 2020/11/16 19:21:33 Crawling <span class="hljs-keyword">done</span>
+--- PASS: TestCrawlPagesRespectingMaxDepth (1.07s)
+=== RUN   TestCrawlingRules
+--- PASS: TestCrawlingRules (0.00s)
+=== RUN   TestCrawlingRulesNotFound
+--- PASS: TestCrawlingRulesNotFound (0.00s)
+PASS
+ok      github.com/codepr/webcrawler    (cached)
+=== RUN   TestStdHttpFetcherFetch
+--- PASS: TestStdHttpFetcherFetch (0.00s)
+=== RUN   TestStdHttpFetcherFetchLinks
+--- PASS: TestStdHttpFetcherFetchLinks (0.00s)
+=== RUN   TestGoqueryParsePage
+--- PASS: TestGoqueryParsePage (0.00s)
+PASS
+ok      github.com/codepr/webcrawler/fetcher    (cached)
+?       github.com/codepr/webcrawler/messaging    [no <span class="hljs-built_in">test</span> files]
 </code></pre>
 
                                 
@@ -551,7 +736,7 @@ a full lock on update (write) and just a read lock on read.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-17T13:06:35.933Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T11:18:21.746Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-17T18:01:32.590Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T18:01:40.907Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
