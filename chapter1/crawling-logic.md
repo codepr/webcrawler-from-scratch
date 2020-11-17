@@ -316,7 +316,7 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 						<-semaphore
 					}()
 					// We fetch the current link here and parse HTML for children links
-					responseTime, foundLinks, err := fetchClient.FetchLinks(link.String())
+					_, foundLinks, err := fetchClient.FetchLinks(link.String())
 					if err != nil {
 						c.logger.Println(err)
 						return
