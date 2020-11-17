@@ -170,7 +170,6 @@ func serverMockWithoutRobotsTxt() *httptest.Server {
 			<img src="/stonk">
 		</body>`,
 	))
-
 	server := httptest.NewServer(handler)
 	return server
 }
