@@ -241,6 +241,13 @@ crawl, this also allows to spawn a worker goroutine for each URL and push all
 extracted URLs in each page directly into the channel queue, governed by the
 main routine
 
+{% hint style="tip" %}
+In Go there're two distinct types of channels:
+- **Unbuffered**, they block until there's someone consuming on the other end
+  of the channel
+- **Buffered**, these can be filled till the size declared, and block after.
+{% endhint %}
+
 **crawler.go**
 ```go
 // Crawl a single page by fetching the starting URL, extracting all anchors

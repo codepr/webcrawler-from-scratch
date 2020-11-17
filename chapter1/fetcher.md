@@ -208,7 +208,6 @@ func resolveRelativeURL(baseURL string, relative string) (*url.URL, bool) {
 	if err != nil {
 		return nil, false
 	}
-
 	return base.ResolveReference(u), true
 }
 ```
@@ -218,6 +217,11 @@ Well, let's try running those tests, hopefully they'll give a positive outcome:
 ```sh
 go test -v ./...
 ```
+
+{% hint style="info" %}
+Command go test, just like go run and go build, takes care of downloading
+dependencies and updating go.mod file automatically.
+{% endhint %}
 
 ## Fetching HTML documents
 
@@ -385,7 +389,6 @@ func (f stdHttpFetcher) Fetch(url string) (time.Duration, *http.Response, error)
 	if err != nil {
 		return elapsed, nil, err
 	}
-
 	return elapsed, res, nil
 }
 ```
