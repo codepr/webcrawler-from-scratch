@@ -306,7 +306,15 @@ func randDelay(value int64) time.Duration {
 ```
 
 We should update **crawler.go** file with the crawling rules to be applied
-during the crawling process of a domain, in the `crawlPage` private function
+during the crawling process of a domain, in the `crawlPage` private function.
+What we need to do is:
+
+* Create a `CrawlingRules` object before the start of crawling loop
+* At the skip check (for already visited links) we add also the allowance check
+* We use the call `CrawlingRules#CrawlDelay` to set the sleeping time on each
+  worker goroutine
+* We make use of the response time of the `Fetcher#FetchLinks` call to update
+  the last call delay on the crawling rules
 
 ```diff
 func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context.Context) {
@@ -350,7 +358,8 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 					// OOM (or banned from the website) really fast
 					semaphore <- struct{}{}
 					defer func() {
-						time.Sleep(crawlingRules.CrawlDelay())
+-                       time.Sleep(c.settings.PolitenessFixedDelay)
++						time.Sleep(crawlingRules.CrawlDelay())
 						<-semaphore
 					}()
 					// We fetch the current link here and parse HTML for children links
@@ -369,9 +378,9 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 }
 ```
 
-Before giving the usual check on unit tests, hoping that nothing broke, we can
-update also **crawler\_test.go** file with some more test cases, to make sure
-that our `CrawlingRules` object do his job correctly:
+Before giving the usual check on unit tests, hoping that nothing has been
+broken, we can update also **crawler\_test.go** file with some more test cases,
+to make sure that our `CrawlingRules` object do his job correctly:
 
 ```go
 func serverMockWithRobotsTxt() *httptest.Server {
@@ -409,7 +418,6 @@ func serverMockWithRobotsTxt() *httptest.Server {
 			<img src="/stonk">
 		</body>`,
 	))
-
 	server := httptest.NewServer(handler)
 	return server
 }
