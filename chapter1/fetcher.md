@@ -252,7 +252,6 @@ import (
 func serverMock() *httptest.Server {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/foo/bar", resourceMock)
-
 	server := httptest.NewServer(handler)
 	return server
 }
@@ -376,7 +375,6 @@ func New(userAgent string, parser Parser, timeout time.Duration) *stdHttpFetcher
 // toward an URL.
 // It returns an `*http.Response` or any error occured during the call.
 func (f stdHttpFetcher) Fetch(url string) (time.Duration, *http.Response, error) {
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return time.Duration(0), nil, err
@@ -434,13 +432,11 @@ func (f stdHttpFetcher) FetchLinks(targetURL string) (time.Duration, []*url.URL,
 	}
 	// Extract base domain from the url
 	baseDomain := parseStartURL(targetURL)
-
 	elapsed, resp, err := f.Fetch(targetURL)
 	if err != nil || resp.StatusCode >= http.StatusBadRequest {
 		return elapsed, nil, fmt.Errorf("fetching links from %s failed: %w", targetURL, err)
 	}
 	defer resp.Body.Close()
-
 	links, err := f.parser.Parse(baseDomain, resp.Body)
 	if err != nil {
 		return elapsed, nil, fmt.Errorf("fetching links from %s failed: %w", targetURL, err)
