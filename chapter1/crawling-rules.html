@@ -1,0 +1,594 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Crawling rules · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+        <link rel="stylesheet" href="../styles/website.css">
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    
+    <link rel="prev" href="messaging.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="../chapter0/">
+            
+                <a href="../chapter0/">
+            
+                    
+                    Project setup
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.2.1" data-path="../chapter0/installation.html">
+            
+                <a href="../chapter0/installation.html">
+            
+                    
+                    Go installation
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2.2" data-path="../chapter0/environment.html">
+            
+                <a href="../chapter0/environment.html">
+            
+                    
+                    Editors and IDEs
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Web crawler
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.3.1" data-path="fetcher.html">
+            
+                <a href="fetcher.html">
+            
+                    
+                    Fetch and parse
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.2" data-path="crawling-logic.html">
+            
+                <a href="crawling-logic.html">
+            
+                    
+                    Crawling logic
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.3" data-path="messaging.html">
+            
+                <a href="messaging.html">
+            
+                    
+                    Introducing a middleware
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.3.4" data-path="crawling-rules.html">
+            
+                <a href="crawling-rules.html">
+            
+                    
+                    Crawling rules
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Crawling rules</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="crawling-rules">Crawling rules</h1>
+<p>One of the most important traits that a web crawler must fulfill is the
+politeness towards every domain it will crawl. Politeness is achieved by
+applying some rules regarding:</p>
+<ul>
+<li>Number of requests per unit of time to the website</li>
+<li>Respecting the will of the domain about allowed sub-domains and links to
+follow</li>
+<li>Respect the website behavior, expressed by HTTP responses to each call</li>
+</ul>
+<p>Conceptually it&apos;s a set of well-manner rules, would you ever enter in a
+stranger house and start opening all his rooms, fridges and wardrobes or hell,
+use their bathroom without asking? The least that can happen is that you&apos;ll
+end up banned with a restraining injunction towards that place. And it&apos;s
+exactly what happens with web crawlers that do not respect well-manner rules.</p>
+<p>Generally most domains put a file named <code>robots.txt</code> in the root of their
+website which contains these rules, meant exactly for web crawlers and bots,
+sometimes general rules, sometimes targeted rules based on the user-agent of
+the crawler, sometimes both:</p>
+<pre><code>User-agent: badbot
+Disallow: /             # Disallow all
+
+User-agent: *
+Allow: */bar/*
+Disallow: */baz/*
+Crawl-delay: 2          # 2 seconds of delay between each call
+</code></pre><p>In this example we can see the webadmin specified a targeted rule for &quot;badbot&quot;
+which disallow the crawling for the entire domain, and a general rule for
+everyone which apply a crawling delay of two seconds between HTTP calls.</p>
+<p>Our crawler already supports a simple directive regarding the number of
+requests per unit of time, in the form of a <code>politenessDelay</code>, but we can do
+better, we&apos;re going to add a new object specifically responsible of the
+managing of these rules, we expect it to:</p>
+<ul>
+<li>Be able to parse <code>robots.txt</code> files</li>
+<li>Be able to calculate a good delay between calls, taking into consideration
+robots rules, the politeness delay and the response time of each call</li>
+<li>Tell us if a domain is allowed to be crawled</li>
+</ul>
+<p>Parsing <code>robots.txt</code> is a simple but a tedious job,
+<a href="github.com/temoto/robotstxt">github.com/temoto/robotstxt</a> offers nice APIs to
+manage these rules efficiently, thus our struct will carry a <code>robotstxt.Group</code>
+pointer, the other member will be the <code>politenessDelay</code> we previously used as
+delay between calls on <strong>crawler.go</strong>.<br>
+The test suite should be straight-forward to write, let&apos;s start simple, just a
+simple server mock with a fake <code>robots.txt</code> path to be parsed.</p>
+<p><strong>crawlingrules_test.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// Package crawler containing the crawling logics and utilities to scrape</span>
+<span class="hljs-comment">// remote resources on the web</span>
+<span class="hljs-keyword">package</span> crawler
+
+<span class="hljs-keyword">import</span> (
+    <span class="hljs-string">&quot;net/http&quot;</span>
+    <span class="hljs-string">&quot;net/http/httptest&quot;</span>
+    <span class="hljs-string">&quot;net/url&quot;</span>
+    <span class="hljs-string">&quot;testing&quot;</span>
+    <span class="hljs-string">&quot;time&quot;</span>
+)
+
+<span class="hljs-keyword">func</span> serverMock() *httptest.Server {
+    handler := http.NewServeMux()
+    handler.HandleFunc(<span class="hljs-string">&quot;/robots.txt&quot;</span>, <span class="hljs-keyword">func</span>(w http.ResponseWriter, r *http.Request) {
+        _, _ = w.Write([]<span class="hljs-keyword">byte</span>(
+            <span class="hljs-string">`User-agent: *
+    Disallow: */baz/*
+    Crawl-delay: 2`</span>,
+        ))
+    })
+    server := httptest.NewServer(handler)
+    <span class="hljs-keyword">return</span> server
+}
+
+<span class="hljs-keyword">func</span> serverWithoutCrawlingRules() *httptest.Server {
+    handler := http.NewServeMux()
+    handler.HandleFunc(<span class="hljs-string">&quot;/foo&quot;</span>, <span class="hljs-keyword">func</span>(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+    })
+    server := httptest.NewServer(handler)
+    <span class="hljs-keyword">return</span> server
+}
+
+<span class="hljs-keyword">func</span> TestCrawlingRules(t *testing.T) {
+    server := serverMock()
+    <span class="hljs-keyword">defer</span> server.Close()
+    serverURL, _ := url.Parse(server.URL)
+    r := NewCrawlingRules(serverURL, <span class="hljs-number">100</span>*time.Millisecond)
+    testLink, _ := url.Parse(server.URL + <span class="hljs-string">&quot;/foo/baz/bar&quot;</span>)
+    <span class="hljs-keyword">if</span> !r.Allowed(testLink) {
+        t.Errorf(<span class="hljs-string">&quot;CrawlingRules#IsAllowed failed: expected true got false&quot;</span>)
+    }
+    r.GetRobotsTxtGroup(<span class="hljs-string">&quot;test-agent&quot;</span>, serverURL)
+    <span class="hljs-keyword">if</span> r.Allowed(testLink) {
+        t.Errorf(<span class="hljs-string">&quot;CrawlingRules#IsAllowed failed: expected false got true&quot;</span>)
+    }
+    <span class="hljs-keyword">if</span> r.CrawlDelay() != <span class="hljs-number">2</span>*time.Second {
+        t.Errorf(<span class="hljs-string">&quot;CrawlingRules#CrawlDelay failed: expected 2 got %d&quot;</span>, r.CrawlDelay())
+    }
+}
+
+<span class="hljs-keyword">func</span> TestCrawlingRulesNotFound(t *testing.T) {
+    server := serverWithoutCrawlingRules()
+    <span class="hljs-keyword">defer</span> server.Close()
+    serverURL, _ := url.Parse(server.URL)
+    r := NewCrawlingRules(serverURL, <span class="hljs-number">100</span>*time.Millisecond)
+    <span class="hljs-keyword">if</span> r.GetRobotsTxtGroup(<span class="hljs-string">&quot;test-agent&quot;</span>, serverURL) {
+        t.Errorf(<span class="hljs-string">&quot;CrawlingRules#GetRobotsTxtGroup failed&quot;</span>)
+    }
+}
+</code></pre>
+<p>Our <code>CrawlingRules</code>, for now, will handle just a single domain, so it&apos;ll be
+logically instantiated each time we want to crawl a domain, in the <code>crawlPage</code>
+method. This implies that the object will be shared between multiple concurrent
+workers, we need to make it thread-safe with a mutex, Go offers two mutex types:</p>
+<ul>
+<li><code>sync.Mutex</code> the classical mutex lock, mutual exclusion of read and write
+operations, once hold the lock, no one can actually access the critical part
+of the guarded code</li>
+<li><code>sync.RWMutex</code> this is a little more relaxed, offers the possibility to lock
+either for read or for write operations, based on the rationale that only
+writes bring changes, it makes possible to have unlimited read-lock, but just
+only one write-lock, and no one can access the critical part if a write lock
+is hold, till the release</li>
+</ul>
+<p>We choose the <code>sync.RWMutex</code>, as we mentioned earlier, we want also to take
+into account the server reactions towards our requests, beside the status code,
+the first metric that we want to mix-in in the crawling rules is the response
+time, and that&apos;s exactly where we want to guard against concurrent access,
+after each call we&apos;d like to update the last call delay, but also let other
+workers access it if needed to delay their next call, so we&apos;re going to need
+a full lock on update (write) and just a read lock on read.</p>
+<p><strong>crawlingrules.go</strong></p>
+<pre><code class="lang-go"><span class="hljs-comment">// Package crawler containing the crawling logics and utilities to scrape</span>
+<span class="hljs-comment">// remote resources on the web</span>
+<span class="hljs-keyword">package</span> crawler
+
+<span class="hljs-keyword">import</span> (
+    <span class="hljs-string">&quot;math&quot;</span>
+    <span class="hljs-string">&quot;math/rand&quot;</span>
+    <span class="hljs-string">&quot;net/http&quot;</span>
+    <span class="hljs-string">&quot;net/url&quot;</span>
+    <span class="hljs-string">&quot;sync&quot;</span>
+    <span class="hljs-string">&quot;time&quot;</span>
+
+    <span class="hljs-string">&quot;github.com/codepr/webcrawler/fetcher&quot;</span>
+
+    <span class="hljs-string">&quot;github.com/temoto/robotstxt&quot;</span>
+)
+
+<span class="hljs-comment">// Default /robots.txt path on server</span>
+<span class="hljs-keyword">const</span> robotsTxtPath <span class="hljs-keyword">string</span> = <span class="hljs-string">&quot;/robots.txt&quot;</span>
+
+<span class="hljs-comment">// CrawlingRules contains the rules to be obeyed during the crawling of a single</span>
+<span class="hljs-comment">// domain, including allowances and delays to respect.</span>
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// There are a total of 3 different delays for each domain, the robots.txt has</span>
+<span class="hljs-comment">// always the precedence over the fixedDelay and the lastDelay.</span>
+<span class="hljs-comment">// If no robots.txt is found during the crawl, a random delay will be calculated</span>
+<span class="hljs-comment">// based on the response time of the last request, if a fixedDelay is set, the</span>
+<span class="hljs-comment">// major between a random value between 1.5 * fixedDelay and 0.5 * fixedDelay</span>
+<span class="hljs-comment">// and the lastDelay will be chosen.</span>
+<span class="hljs-keyword">type</span> CrawlingRules <span class="hljs-keyword">struct</span> {
+    <span class="hljs-comment">// temoto/robotstxt backend is used to fetch the robotsGroup from the</span>
+    <span class="hljs-comment">// robots.txt file</span>
+    robotsGroup *robotstxt.Group
+    <span class="hljs-comment">// A fixed delay to respect on each request if no valid robots.txt is found</span>
+    fixedDelay time.Duration
+    <span class="hljs-comment">// The delay of the last request, useful to calculate a new delay for the</span>
+    <span class="hljs-comment">// next request</span>
+    lastDelay time.Duration
+    <span class="hljs-comment">// A RWmutex is needed to make the delya calculation threadsafe as this</span>
+    <span class="hljs-comment">// struct will be shared among multiple goroutines</span>
+    rwMutex sync.RWMutex
+}
+
+<span class="hljs-comment">// NewCrawlingRules creates a new CrawlingRules struct</span>
+<span class="hljs-keyword">func</span> NewCrawlingRules(fixedDelay time.Duration) *CrawlingRules {
+    <span class="hljs-keyword">return</span> &amp;CrawlingRules{fixedDelay: fixedDelay}
+}
+
+<span class="hljs-comment">// Allowed tests for eligibility of an URL to be crawled, based on the rules</span>
+<span class="hljs-comment">// of the robots.txt file on the server. If no valid robots.txt is found all</span>
+<span class="hljs-comment">// URLs in the domain are assumed to be allowed, returning true.</span>
+<span class="hljs-keyword">func</span> (r *CrawlingRules) Allowed(url *url.URL) <span class="hljs-keyword">bool</span> {
+    <span class="hljs-keyword">if</span> r.robotsGroup != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> r.robotsGroup.Test(url.RequestURI())
+    }
+    <span class="hljs-keyword">return</span> True
+}
+
+<span class="hljs-comment">// CrawlDelay return the delay to be respected for the next request on a same</span>
+<span class="hljs-comment">// domain. It chooses from 3 different possible delays, the most important one</span>
+<span class="hljs-comment">// is the one defined by the robots.txt of the domain, then it proceeds</span>
+<span class="hljs-comment">// generating a random delay based on the last request response time and a</span>
+<span class="hljs-comment">// fixed delay set by configuration of the crawler.</span>
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// It follows these steps:</span>
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// - robots.txt delay</span>
+<span class="hljs-comment">// - delay = random 0.5*fixedDelay and 1.5*fixedDelay</span>
+<span class="hljs-comment">// - max(lastResponseTime^2, delay, robots.txt delay)</span>
+<span class="hljs-keyword">func</span> (r *CrawlingRules) CrawlDelay() time.Duration {
+    r.rwMutex.RLock()
+    <span class="hljs-keyword">defer</span> r.rwMutex.RUnlock()
+    <span class="hljs-keyword">var</span> delay time.Duration
+    <span class="hljs-keyword">if</span> r.robotsGroup != <span class="hljs-literal">nil</span> {
+        delay = r.robotsGroup.CrawlDelay
+    }
+    <span class="hljs-comment">// We calculate a random value: 0.5*fixedDelay &lt; value &lt; 1.5*fixedDelay</span>
+    randomDelay := randDelay(<span class="hljs-keyword">int64</span>(r.fixedDelay.Milliseconds())) * time.Millisecond
+    baseDelay := time.Duration(
+        math.Max(<span class="hljs-keyword">float64</span>(randomDelay.Milliseconds()), <span class="hljs-keyword">float64</span>(delay.Milliseconds())),
+    ) * time.Millisecond
+    <span class="hljs-comment">// We return the max between the random value calculated and the lastDelay</span>
+    <span class="hljs-keyword">return</span> time.Duration(
+        math.Max(<span class="hljs-keyword">float64</span>(r.lastDelay.Milliseconds()), <span class="hljs-keyword">float64</span>(baseDelay.Milliseconds())),
+    ) * time.Millisecond
+}
+
+<span class="hljs-comment">// SetDelay just pow(2) the lastTime response in seconds and set it as the</span>
+<span class="hljs-comment">// lastDelay value</span>
+<span class="hljs-keyword">func</span> (r *CrawlingRules) UpdateLastDelay(lastResponseTime time.Duration) {
+    r.rwMutex.Lock()
+    r.lastDelay = time.Duration(
+        math.Pow(<span class="hljs-keyword">float64</span>(lastResponseTime.Seconds()), <span class="hljs-number">2.0</span>),
+    ) * time.Second
+    r.rwMutex.Unlock()
+}
+
+<span class="hljs-comment">// GetRobotsTxtGroup tryes to fetch the robots.txt from the domain and parse</span>
+<span class="hljs-comment">// it. Returns a boolean based on the success of the process.</span>
+<span class="hljs-keyword">func</span> (r *CrawlingRules) GetRobotsTxtGroup(userAgent <span class="hljs-keyword">string</span>, domain *url.URL) <span class="hljs-keyword">bool</span> {
+    f := fetcher.New(userAgent, <span class="hljs-literal">nil</span>, <span class="hljs-number">10</span>*time.Second)
+    u, _ := url.Parse(robotsTxtPath)
+    targetURL := domain.ResolveReference(u)
+    <span class="hljs-comment">// Try to fetch the robots.txt file</span>
+    _, res, err := f.Fetch(targetURL.String())
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> || res.StatusCode == http.StatusNotFound {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    }
+    body, err := robotstxt.FromResponse(res)
+    <span class="hljs-comment">// If robots data cannot be parsed, will return nil, which will allow access by default.</span>
+    <span class="hljs-comment">// Reasonable, since by default no robots.txt means full access, so invalid</span>
+    <span class="hljs-comment">// robots.txt is similar behavior.</span>
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    }
+    r.robotsGroup = body.FindGroup(userAgent)
+    <span class="hljs-keyword">return</span> r.robotsGroup != <span class="hljs-literal">nil</span>
+}
+
+<span class="hljs-comment">// Return a random value between 1.5*value and 0.5*value</span>
+<span class="hljs-keyword">func</span> randDelay(value <span class="hljs-keyword">int64</span>) time.Duration {
+    <span class="hljs-keyword">if</span> value == <span class="hljs-number">0</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+    }
+    max, min := <span class="hljs-number">1.5</span>*<span class="hljs-keyword">float64</span>(value), <span class="hljs-number">0.5</span>*<span class="hljs-keyword">float64</span>(value)
+    <span class="hljs-keyword">return</span> time.Duration(rand.Int63n(<span class="hljs-keyword">int64</span>(max-min)) + <span class="hljs-keyword">int64</span>(max))
+}
+</code></pre>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="messaging.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page: Introducing a middleware">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-17T13:06:35.933Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T11:18:21.746Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-livereload/plugin.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
