@@ -98,7 +98,7 @@ library that exposes a method `ReadLine`, we can easily declare an interface
 object (or whatever object with a `ReadLine` method) or a newly defined object
 with the `ReadLine` method defined into a simple function `ReadByLine(r
 ReadLiner)`.<br>
-It's the principle of **accepts interfaces, return structs** [^2], in other
+It's the principle of **accepts interfaces, return structs**[^2], in other
 words if a function signature accepts an interface, then callers have the
 option to pass in any concrete type, just as long as it implements that
 interface. The implication is that interfaces should be declared close to where
