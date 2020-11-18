@@ -73,6 +73,20 @@ type ProducerConsumerCloser interface {
 }
 ```
 
+{% hint style="info" %}
+Channels as function arguments can be specified also with the direction that
+they're meant to be used, be it send-only, receive-only or both.
+{% endhint %}
+
+Producer and consumer are meant to work with the most generic type beside
+`interface{}`, the `[]byte` is usually an exchange format made out of
+encoding of data, be it binary or JSON it is possible to obtain a byte array
+representation of the data.<br>
+The consumer exported method `Consume(chan <- []byte) error` accepts a
+send-only channel, it's the channel that we're going to use to obtain our
+items, the method is in-fact thought as a blocking call whereas another
+goroutine is receiving on the other end of the channel.
+
 From now on these are our gates and pipes to communicate, it'll be possible to
 create multiple different structs, like `RabbitMQ` or `Redis` backed to pass
 around bits from the crawling logic to other clients.
@@ -290,7 +304,8 @@ The constructor will be updated as well
 ```
 
 Finally the `crawlPage` private method, we want that after every link has been
-extracted it produce it by using the `Producer` queue:
+extracted, it goes into the queue by using the `Producer` interface, for the
+format we're just encoding them into JSON by using the standard library:
 
 **crawler.go**
 
