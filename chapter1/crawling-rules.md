@@ -45,7 +45,7 @@ managing of these rules, we expect it to:
 * Tell us if a domain is allowed to be crawled
 
 Parsing `robots.txt` is a simple but a tedious job,
-[github.com/temoto/robotstxt](github.com/temoto/robotstxt) offers nice APIs to
+[github.com/temoto/robotstxt](https://github.com/temoto/robotstxt) offers nice APIs to
 manage these rules efficiently, thus our struct will carry a `robotstxt.Group`
 pointer, the other member will be the `politenessDelay` we previously used as
 delay between calls on **crawler.go**.<br>
@@ -93,7 +93,7 @@ func TestCrawlingRules(t *testing.T) {
 	server := serverMock()
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
-	r := NewCrawlingRules(serverURL, 100*time.Millisecond)
+	r := NewCrawlingRules(100*time.Millisecond)
 	testLink, _ := url.Parse(server.URL + "/foo/baz/bar")
 	if !r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected true got false")
@@ -111,7 +111,7 @@ func TestCrawlingRulesNotFound(t *testing.T) {
 	server := serverWithoutCrawlingRules()
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
-	r := NewCrawlingRules(serverURL, 100*time.Millisecond)
+	r := NewCrawlingRules(100*time.Millisecond)
 	if r.GetRobotsTxtGroup("test-agent", serverURL) {
 		t.Errorf("CrawlingRules#GetRobotsTxtGroup failed")
 	}
@@ -323,9 +323,9 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 	linksCh <- []*url.URL{rootURL}
 +   // We try to fetch a robots.txt rule to follow, being polite to the
 +	// domain
-+	crawlingRules := NewCrawlingRules(rootURL, c.settings.PolitenessFixedDelay)
++	crawlingRules := NewCrawlingRules(c.settings.PolitenessFixedDelay)
 +	if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {
-+		log.Printf("Found a valid %s/robots.txt", rootURL.Host)
++		c.logger.Printf("Found a valid %s/robots.txt", rootURL.Host)
 +	} else {
 +		c.logger.Printf("No valid %s/robots.txt found", rootURL.Host)
 +	}
@@ -379,8 +379,10 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 ```
 
 Before giving the usual check on unit tests, hoping that nothing has been
-broken, we can update also **crawler\_test.go** file with some more test cases,
-to make sure that our `CrawlingRules` object do his job correctly:
+broken, we can also update the crawler unit tests with some more test cases, to
+make sure that our `CrawlingRules` object do his job correctly:
+
+**crawler\_test.go**
 
 ```go
 func serverMockWithRobotsTxt() *httptest.Server {

@@ -245,7 +245,8 @@ main routine
 In Go there're two distinct types of channels:
 - **Unbuffered**, they block until there's someone consuming on the other end
   of the channel
-- **Buffered**, these can be filled till the size declared, and block after.
+- **Buffered**, these can be filled till the size declared during creation,
+  before blocking.
 {% endhint %}
 
 **crawler.go**
@@ -367,7 +368,7 @@ func (c *WebCrawler) Crawl(URLs ...string) {
 	for _, href := range URLs {
 		url, err := url.Parse(href)
 		if err != nil {
-			log.Fatal(err)
+			c.logger.Fatal(err)
 		}
 		if url.Scheme == "" {
 			url.Scheme = "https"
@@ -402,6 +403,12 @@ previously thought steps:
     * fetch HTML contents and extracts all links from the page
     * enqueue every found link into the channel queue
 4. goto 2
+
+{% hint style="info" %}
+Go keyword **defer** postpone the execution of a function until the surrounding
+function returns.<br>Multiple **defer** calls are stacked in a LIFO way, so the
+latest function is executed first.
+{% endhint %}
 
 The `select` makes it a little harder to follow as it introduces asynchronicity
 in the flow, but the low number of branches, just two, makes it simple to
