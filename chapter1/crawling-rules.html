@@ -297,7 +297,7 @@ robots rules, the politeness delay and the response time of each call</li>
 <li>Tell us if a domain is allowed to be crawled</li>
 </ul>
 <p>Parsing <code>robots.txt</code> is a simple but a tedious job,
-<a href="github.com/temoto/robotstxt">github.com/temoto/robotstxt</a> offers nice APIs to
+<a href="https://github.com/temoto/robotstxt" target="_blank">github.com/temoto/robotstxt</a> offers nice APIs to
 manage these rules efficiently, thus our struct will carry a <code>robotstxt.Group</code>
 pointer, the other member will be the <code>politenessDelay</code> we previously used as
 delay between calls on <strong>crawler.go</strong>.<br>
@@ -342,7 +342,7 @@ simple server mock with a fake <code>robots.txt</code> path to be parsed.</p>
     server := serverMock()
     <span class="hljs-keyword">defer</span> server.Close()
     serverURL, _ := url.Parse(server.URL)
-    r := NewCrawlingRules(serverURL, <span class="hljs-number">100</span>*time.Millisecond)
+    r := NewCrawlingRules(<span class="hljs-number">100</span>*time.Millisecond)
     testLink, _ := url.Parse(server.URL + <span class="hljs-string">&quot;/foo/baz/bar&quot;</span>)
     <span class="hljs-keyword">if</span> !r.Allowed(testLink) {
         t.Errorf(<span class="hljs-string">&quot;CrawlingRules#IsAllowed failed: expected true got false&quot;</span>)
@@ -360,7 +360,7 @@ simple server mock with a fake <code>robots.txt</code> path to be parsed.</p>
     server := serverWithoutCrawlingRules()
     <span class="hljs-keyword">defer</span> server.Close()
     serverURL, _ := url.Parse(server.URL)
-    r := NewCrawlingRules(serverURL, <span class="hljs-number">100</span>*time.Millisecond)
+    r := NewCrawlingRules(<span class="hljs-number">100</span>*time.Millisecond)
     <span class="hljs-keyword">if</span> r.GetRobotsTxtGroup(<span class="hljs-string">&quot;test-agent&quot;</span>, serverURL) {
         t.Errorf(<span class="hljs-string">&quot;CrawlingRules#GetRobotsTxtGroup failed&quot;</span>)
     }
@@ -560,9 +560,9 @@ the last call delay on the crawling rules</li>
     linksCh &lt;- []*url.URL{rootURL}
 <span class="hljs-addition">+   // We try to fetch a robots.txt rule to follow, being polite to the</span>
 <span class="hljs-addition">+    // domain</span>
-<span class="hljs-addition">+    crawlingRules := NewCrawlingRules(rootURL, c.settings.PolitenessFixedDelay)</span>
+<span class="hljs-addition">+    crawlingRules := NewCrawlingRules(c.settings.PolitenessFixedDelay)</span>
 <span class="hljs-addition">+    if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {</span>
-<span class="hljs-addition">+        log.Printf(&quot;Found a valid %s/robots.txt&quot;, rootURL.Host)</span>
+<span class="hljs-addition">+        c.logger.Printf(&quot;Found a valid %s/robots.txt&quot;, rootURL.Host)</span>
 <span class="hljs-addition">+    } else {</span>
 <span class="hljs-addition">+        c.logger.Printf(&quot;No valid %s/robots.txt found&quot;, rootURL.Host)</span>
 <span class="hljs-addition">+    }</span>
@@ -615,8 +615,9 @@ the last call delay on the crawling rules</li>
 }
 </code></pre>
 <p>Before giving the usual check on unit tests, hoping that nothing has been
-broken, we can update also <strong>crawler_test.go</strong> file with some more test cases,
-to make sure that our <code>CrawlingRules</code> object do his job correctly:</p>
+broken, we can also update the crawler unit tests with some more test cases, to
+make sure that our <code>CrawlingRules</code> object do his job correctly:</p>
+<p><strong>crawler_test.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-keyword">func</span> serverMockWithRobotsTxt() *httptest.Server {
     handler := http.NewServeMux()
     handler.HandleFunc(<span class="hljs-string">&quot;/robots.txt&quot;</span>, resourceMock(
@@ -749,7 +750,7 @@ ok      github.com/codepr/webcrawler/fetcher    (cached)
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-17T18:09:40.085Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-18T18:02:23.400Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
