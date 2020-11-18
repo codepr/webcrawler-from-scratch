@@ -325,6 +325,17 @@ by adding three generic communication interfaces:</p>
     Close()
 }
 </code></pre>
+<p><div class="alert alert-info hints-alert"><div class="hints-icon"><i class="fa fa-info-circle"></i></div><div class="hints-container"><p>Channels as function arguments can be specified also with the direction that
+they&apos;re meant to be used, be it send-only, receive-only or both.</p>
+</div></div></p>
+<p>Producer and consumer are meant to work with the most generic type beside
+<code>interface{}</code>, the <code>[]byte</code> is usually an exchange format made out of
+encoding of data, be it binary or JSON it is possible to obtain a byte array
+representation of the data.<br>
+The consumer exported method <code>Consume(chan &lt;- []byte) error</code> accepts a
+send-only channel, it&apos;s the channel that we&apos;re going to use to obtain our
+items, the method is in-fact thought as a blocking call whereas another
+goroutine is receiving on the other end of the channel.</p>
 <p>From now on these are our gates and pipes to communicate, it&apos;ll be possible to
 create multiple different structs, like <code>RabbitMQ</code> or <code>Redis</code> backed to pass
 around bits from the crawling logic to other clients.</p>
@@ -531,7 +542,8 @@ add the forwarding code into the main <code>crawlPage</code> loop:</p>
 }
 </code></pre>
 <p>Finally the <code>crawlPage</code> private method, we want that after every link has been
-extracted it produce it by using the <code>Producer</code> queue:</p>
+extracted, it goes into the queue by using the <code>Producer</code> interface, for the
+format we&apos;re just encoding them into JSON by using the standard library:</p>
 <p><strong>crawler.go</strong></p>
 <pre><code class="lang-diff">func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context.Context) {
     ...
@@ -631,7 +643,7 @@ most of the time are inserted on the root of the site.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"next":{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-17T18:12:04.280Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"next":{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-18T18:40:28.225Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
