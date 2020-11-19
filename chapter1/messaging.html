@@ -209,6 +209,19 @@
             
         </li>
     
+        <li class="chapter " data-level="1.3.5" data-path="main.html">
+            
+                <a href="main.html">
+            
+                    
+                    First run
+            
+                </a>
+            
+
+            
+        </li>
+    
 
             </ul>
             
@@ -580,13 +593,13 @@ format we&apos;re just encoding them into JSON by using the standard library:</p
 <span class="hljs-addition">+}</span>
 </code></pre>
 <p>And we&apos;re good to go, we should be all green running a go test now:</p>
-<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
+<pre><code>go test -v ./...
 === RUN   TestCrawlPages
 --- PASS: TestCrawlPages (1.20s)
 === RUN   TestCrawlPagesRespectingMaxDepth
 --- PASS: TestCrawlPagesRespectingMaxDepth (1.07s)
 PASS
-ok      github.com/codepr/webcrawler    3.495s
+ok      webcrawler    3.495s
 === RUN   TestStdHttpFetcherFetch
 --- PASS: TestStdHttpFetcherFetch (0.00s)
 === RUN   TestStdHttpFetcherFetchLinks
@@ -594,10 +607,9 @@ ok      github.com/codepr/webcrawler    3.495s
 === RUN   TestGoqueryParsePage
 --- PASS: TestGoqueryParsePage (0.00s)
 PASS
-ok      github.com/codepr/webcrawler/fetcher    (cached)
-?       github.com/codepr/webcrawler/messaging    [no <span class="hljs-built_in">test</span> files]
-</code></pre>
-<p>In the next chapter we&apos;re going to explore politeness concept, or how a good
+ok      webcrawler/fetcher    (cached)
+?       webcrawler/messaging    [no test files]
+</code></pre><p>In the next chapter we&apos;re going to explore politeness concept, or how a good
 web crawler should behave while visiting a domain and <code>robots.txt</code> rules that
 most of the time are inserted on the root of the site.</p>
 
@@ -643,7 +655,7 @@ most of the time are inserted on the root of the site.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"next":{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-19T14:40:38.463Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"next":{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-19T20:33:04.890Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

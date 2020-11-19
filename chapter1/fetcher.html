@@ -209,6 +209,19 @@
             
         </li>
     
+        <li class="chapter " data-level="1.3.5" data-path="main.html">
+            
+                <a href="main.html">
+            
+                    
+                    First run
+            
+                </a>
+            
+
+            
+        </li>
+    
 
             </ul>
             
@@ -403,7 +416,20 @@ really similar to dynamic languages like Python or Ruby.</p>
         p.excludedExts[ext] = <span class="hljs-literal">true</span>
     }
 }
-
+</code></pre>
+<p><div class="alert alert-info hints-alert"><div class="hints-icon"><i class="fa fa-info-circle"></i></div><div class="hints-container"><p>Go does not natively support the set data structure, the idiomatic way to
+implement it is to use a map with <code>bool</code> as value type</p>
+</div></div></p>
+<p><code>GoqueryParser</code> could very well been an empty struct, as long as it implements
+the parse method we&apos;re good, but the object is meant to be shared to multiple
+workers and it&apos;s advisable to filter out repeated links already. For a simple
+list of exclusion we use a set (a map with <code>bool</code> value), representing the file
+extensions that we don&apos;t want to extract from each HTML document we fetch. The
+<code>seen</code> map is a concurrent implementation of a map from the <code>sync</code> package,
+its an optimized version of a simple map guarded by mutex.</p>
+<p>Let&apos;s implement the parse method with the goquery library:</p>
+<p><strong>fetcher/parser.go</strong></p>
+<pre><code class="lang-go">
 <span class="hljs-comment">// Parse is the implementation of the `Parser` interface for the</span>
 <span class="hljs-comment">// `GoqueryParser` struct, read the content of an `io.Reader` (e.g.</span>
 <span class="hljs-comment">// any file-like streamable object) and extracts all anchor links.</span>
@@ -420,7 +446,7 @@ really similar to dynamic languages like Python or Ruby.</p>
 
 <span class="hljs-comment">// extractLinks retrieves all anchor links inside a `goquery.Document`</span>
 <span class="hljs-comment">// representing an HTML content.</span>
-<span class="hljs-comment">// It returns a slice of string containing all the extracted links or `nil` if\</span>
+<span class="hljs-comment">// It returns a slice of string containing all the extracted links or `nil` if</span>
 <span class="hljs-comment">// the passed document is a `nil` pointer.</span>
 <span class="hljs-keyword">func</span> (p *GoqueryParser) extractLinks(doc *goquery.Document, baseURL <span class="hljs-keyword">string</span>) []*url.URL {
     <span class="hljs-keyword">if</span> doc == <span class="hljs-literal">nil</span> {
@@ -465,9 +491,8 @@ really similar to dynamic languages like Python or Ruby.</p>
 }
 </code></pre>
 <p>Well, let&apos;s try running those tests, hopefully they&apos;ll give a positive outcome:</p>
-<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
-</code></pre>
-<p><div class="alert alert-info hints-alert"><div class="hints-icon"><i class="fa fa-info-circle"></i></div><div class="hints-container"><p>Command go test, just like go run and go build, takes care of downloading
+<pre><code>go test -v ./...
+</code></pre><p><div class="alert alert-info hints-alert"><div class="hints-icon"><i class="fa fa-info-circle"></i></div><div class="hints-container"><p>Command go test, just like go run and go build, takes care of downloading
 dependencies and updating go.mod file automatically.</p>
 </div></div></p>
 <h2 id="fetching-html-documents">Fetching HTML documents</h2>
@@ -675,7 +700,7 @@ useful later for calculating a politeness delay during the crawling process</em>
 }
 </code></pre>
 <p>Running the simple unit tests we written should result in a success outcome</p>
-<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
+<pre><code>go test -v ./...
 === RUN   TestStdHttpFetcherFetch
 --- PASS: TestStdHttpFetcherFetch (0.00s)
 === RUN   TestStdHttpFetcherFetchLinks
@@ -684,9 +709,8 @@ useful later for calculating a politeness delay during the crawling process</em>
 --- PASS: TestGoqueryParsePage (0.00s)
 PASS
 ok      webcrawler/fetcher    0.006s
-</code></pre>
-<p>The project structure should be the following</p>
-<pre><code class="lang-sh">tree
+</code></pre><p>The project structure should be the following</p>
+<pre><code>tree
 .
 &#x251C;&#x2500;&#x2500; fetcher
 &#x2502;   &#x251C;&#x2500;&#x2500; fetcher.go
@@ -695,8 +719,7 @@ ok      webcrawler/fetcher    0.006s
 &#x2502;   &#x2514;&#x2500;&#x2500; parser_test.go
 &#x251C;&#x2500;&#x2500; go.mod
 &#x2514;&#x2500;&#x2500; go.sum
-</code></pre>
-<blockquote id="fn_2">
+</code></pre><blockquote id="fn_2">
 <sup>2</sup>. <a href="https://commandercoriander.net/blog/2018/03/30/go-interfaces/" target="_blank">https://commandercoriander.net/blog/2018/03/30/go-interfaces/</a><a href="#reffn_2" title="Jump back to footnote [2] in the text."> &#x21A9;</a>
 </blockquote>
 
@@ -742,7 +765,7 @@ ok      webcrawler/fetcher    0.006s
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Crawling service","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-19T17:13:05.653Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Crawling service","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},{"title":"First run","level":"1.3.5","depth":2,"path":"chapter1/main.md","ref":"chapter1/main.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-19T20:29:39.611Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

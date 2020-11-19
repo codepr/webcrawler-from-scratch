@@ -53,6 +53,8 @@
     <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
 
     
+    <link rel="next" href="main.html" />
+    
     
     <link rel="prev" href="messaging.html" />
     
@@ -200,6 +202,19 @@
             
                     
                     Crawling rules
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3.5" data-path="main.html">
+            
+                <a href="main.html">
+            
+                    
+                    First run
             
                 </a>
             
@@ -412,7 +427,7 @@ next HTTP call</li>
     <span class="hljs-string">&quot;sync&quot;</span>
     <span class="hljs-string">&quot;time&quot;</span>
 
-    <span class="hljs-string">&quot;github.com/codepr/webcrawler/fetcher&quot;</span>
+    <span class="hljs-string">&quot;webcrawler/fetcher&quot;</span>
 
     <span class="hljs-string">&quot;github.com/temoto/robotstxt&quot;</span>
 )
@@ -566,7 +581,6 @@ the last call delay on the crawling rules</li>
 <span class="hljs-addition">+    } else {</span>
 <span class="hljs-addition">+        c.logger.Printf(&quot;No valid %s/robots.txt found&quot;, rootURL.Host)</span>
 <span class="hljs-addition">+    }</span>
-
     // Every cycle represents a single page crawling, when new anchors are
     // found, the counter is increased, making the loop continue till the
     // end of links
@@ -683,24 +697,24 @@ make sure that our <code>CrawlingRules</code> object do his job correctly:</p>
 }
 </code></pre>
 <p>Now this should be the result of every unit test written so far:</p>
-<pre><code class="lang-sh">go <span class="hljs-built_in">test</span> -v ./...
+<pre><code>go test -v ./...
 === RUN   TestCrawlPages
 crawler: 2020/11/16 19:21:30 No valid 127.0.0.1:32855/robots.txt found
-crawler: 2020/11/16 19:21:31 Crawling <span class="hljs-keyword">done</span>
+crawler: 2020/11/16 19:21:31 Crawling done
 --- PASS: TestCrawlPages (1.20s)
 === RUN   TestCrawlPagesRespectingRobotsTxt
-crawler: 2020/11/16 19:21:32 Crawling <span class="hljs-keyword">done</span>
+crawler: 2020/11/16 19:21:32 Crawling done
 --- PASS: TestCrawlPagesRespectingRobotsTxt (1.21s)
 === RUN   TestCrawlPagesRespectingMaxDepth
 crawler: 2020/11/16 19:21:32 No valid 127.0.0.1:42011/robots.txt found
-crawler: 2020/11/16 19:21:33 Crawling <span class="hljs-keyword">done</span>
+crawler: 2020/11/16 19:21:33 Crawling done
 --- PASS: TestCrawlPagesRespectingMaxDepth (1.07s)
 === RUN   TestCrawlingRules
 --- PASS: TestCrawlingRules (0.00s)
 === RUN   TestCrawlingRulesNotFound
 --- PASS: TestCrawlingRulesNotFound (0.00s)
 PASS
-ok      github.com/codepr/webcrawler    (cached)
+ok      webcrawler    (cached)
 === RUN   TestStdHttpFetcherFetch
 --- PASS: TestStdHttpFetcherFetch (0.00s)
 === RUN   TestStdHttpFetcherFetchLinks
@@ -708,10 +722,9 @@ ok      github.com/codepr/webcrawler    (cached)
 === RUN   TestGoqueryParsePage
 --- PASS: TestGoqueryParsePage (0.00s)
 PASS
-ok      github.com/codepr/webcrawler/fetcher    (cached)
-?       github.com/codepr/webcrawler/messaging    [no <span class="hljs-built_in">test</span> files]
+ok      webcrawler/fetcher    (cached)
+?       webcrawler/messaging    [no test files]
 </code></pre>
-
                                 
                                 </section>
                             
@@ -738,10 +751,14 @@ ok      github.com/codepr/webcrawler/fetcher    (cached)
 
             
                 
-                <a href="messaging.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page: Introducing a middleware">
+                <a href="messaging.html" class="navigation navigation-prev " aria-label="Previous page: Introducing a middleware">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
+                
+                <a href="main.html" class="navigation navigation-next " aria-label="Next page: First run">
+                    <i class="fa fa-angle-right"></i>
+                </a>
                 
             
         
@@ -750,7 +767,7 @@ ok      github.com/codepr/webcrawler/fetcher    (cached)
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-18T18:02:23.400Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"next":{"title":"First run","level":"1.3.5","depth":2,"path":"chapter1/main.md","ref":"chapter1/main.md","articles":[]},"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-19T20:34:04.537Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
