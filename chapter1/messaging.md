@@ -1,6 +1,6 @@
 # Introducing a middleware
 
-Middlewares are basically every software that is used as a medium, a
+Middlewares are basically every piece of software that is used as a medium, a
 communication channel between different and decoupled components in an
 architecture, message queues, message brokers, buses are effectively all
 middlewares.
