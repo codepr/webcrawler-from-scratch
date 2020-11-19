@@ -7,13 +7,13 @@ that one:
 
 1. Download a `.tar.gz`
 
-```sh
+```
 curl https://golang.org/dl/go1.15.5.linux-amd64.tar.gz
 ```
 
 2. Download the archive and extract it into `/usr/local`, creating a Go tree in `/usr/local/go`.
 
-```sh
+```
 sudo tar -C /usr/local -xzf go1.15.5.linux-amd64.tar.gz
 ```
 
@@ -25,25 +25,25 @@ sudo tar -C /usr/local -xzf go1.15.5.linux-amd64.tar.gz
      shell commands directly or execute them from the profile using a command
      such as source `$HOME/.profile`.
 
-```sh
+```
  export PATH=$PATH:/usr/local/go/bin
 ```
 
 4. Verify that you've installed Go by opening a command prompt and typing the following command:
 
-```sh
+```
 go version
 ```
 
 After the installation is complete and successful we just need to create the
 project folder
 
-```sh
+```
 mkdir webcrawler && cd webcrawler
 ```
 
 and init it
 
-```sh
+```
 go mod init webcrawler
 ```

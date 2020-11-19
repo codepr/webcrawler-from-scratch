@@ -346,14 +346,14 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 ```
 And we're good to go, we should be all green running a go test now:
 
-```sh
+```
 go test -v ./...
 === RUN   TestCrawlPages
 --- PASS: TestCrawlPages (1.20s)
 === RUN   TestCrawlPagesRespectingMaxDepth
 --- PASS: TestCrawlPagesRespectingMaxDepth (1.07s)
 PASS
-ok  	github.com/codepr/webcrawler	3.495s
+ok  	webcrawler	3.495s
 === RUN   TestStdHttpFetcherFetch
 --- PASS: TestStdHttpFetcherFetch (0.00s)
 === RUN   TestStdHttpFetcherFetchLinks
@@ -361,8 +361,8 @@ ok  	github.com/codepr/webcrawler	3.495s
 === RUN   TestGoqueryParsePage
 --- PASS: TestGoqueryParsePage (0.00s)
 PASS
-ok  	github.com/codepr/webcrawler/fetcher	(cached)
-?   	github.com/codepr/webcrawler/messaging	[no test files]
+ok  	webcrawler/fetcher	(cached)
+?   	webcrawler/messaging	[no test files]
 ```
 
 In the next chapter we're going to explore politeness concept, or how a good

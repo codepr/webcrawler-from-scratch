@@ -73,7 +73,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/codepr/webcrawler/fetcher"
+	"webcrawler/fetcher"
 )
 
 const (
@@ -427,7 +427,7 @@ of what's happening inside the crawling loop.
 We've just added two additional `.go` files for the `crawler` package, one for
 unit tests and one for source, this the current project structure so far:
 
-```sh
+```
 tree
 .
 ├── crawler.go

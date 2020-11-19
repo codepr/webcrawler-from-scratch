@@ -166,7 +166,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codepr/webcrawler/fetcher"
+	"webcrawler/fetcher"
 
 	"github.com/temoto/robotstxt"
 )
@@ -329,7 +329,6 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 +	} else {
 +		c.logger.Printf("No valid %s/robots.txt found", rootURL.Host)
 +	}
-
 	// Every cycle represents a single page crawling, when new anchors are
 	// found, the counter is increased, making the loop continue till the
 	// end of links
@@ -452,7 +451,7 @@ func TestCrawlPagesRespectingRobotsTxt(t *testing.T) {
 
 Now this should be the result of every unit test written so far:
 
-```sh
+```
 go test -v ./...
 === RUN   TestCrawlPages
 crawler: 2020/11/16 19:21:30 No valid 127.0.0.1:32855/robots.txt found
@@ -470,7 +469,7 @@ crawler: 2020/11/16 19:21:33 Crawling done
 === RUN   TestCrawlingRulesNotFound
 --- PASS: TestCrawlingRulesNotFound (0.00s)
 PASS
-ok  	github.com/codepr/webcrawler	(cached)
+ok  	webcrawler	(cached)
 === RUN   TestStdHttpFetcherFetch
 --- PASS: TestStdHttpFetcherFetch (0.00s)
 === RUN   TestStdHttpFetcherFetchLinks
@@ -478,6 +477,6 @@ ok  	github.com/codepr/webcrawler	(cached)
 === RUN   TestGoqueryParsePage
 --- PASS: TestGoqueryParsePage (0.00s)
 PASS
-ok  	github.com/codepr/webcrawler/fetcher	(cached)
-?   	github.com/codepr/webcrawler/messaging	[no test files]
+ok  	webcrawler/fetcher	(cached)
+?   	webcrawler/messaging	[no test files]
 ```

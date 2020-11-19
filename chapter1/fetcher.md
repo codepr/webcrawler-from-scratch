@@ -152,6 +152,26 @@ func (p *GoqueryParser) ExcludeExtensions(exts ...string) {
 		p.excludedExts[ext] = true
 	}
 }
+```
+
+{% hint style="info" %}
+Go does not natively support the set data structure, the idiomatic way to
+implement it is to use a map with `bool` as value type
+{% endhint %}
+
+`GoqueryParser` could very well been an empty struct, as long as it implements
+the parse method we're good, but the object is meant to be shared to multiple
+workers and it's advisable to filter out repeated links already. For a simple
+list of exclusion we use a set (a map with `bool` value), representing the file
+extensions that we don't want to extract from each HTML document we fetch. The
+`seen` map is a concurrent implementation of a map from the `sync` package,
+its an optimized version of a simple map guarded by mutex.
+
+Let's implement the parse method with the goquery library:
+
+**fetcher/parser.go**
+
+```go
 
 // Parse is the implementation of the `Parser` interface for the
 // `GoqueryParser` struct, read the content of an `io.Reader` (e.g.
@@ -169,7 +189,7 @@ func (p GoqueryParser) Parse(baseURL string, reader io.Reader) ([]*url.URL, erro
 
 // extractLinks retrieves all anchor links inside a `goquery.Document`
 // representing an HTML content.
-// It returns a slice of string containing all the extracted links or `nil` if\
+// It returns a slice of string containing all the extracted links or `nil` if
 // the passed document is a `nil` pointer.
 func (p *GoqueryParser) extractLinks(doc *goquery.Document, baseURL string) []*url.URL {
 	if doc == nil {
@@ -216,7 +236,7 @@ func resolveRelativeURL(baseURL string, relative string) (*url.URL, bool) {
 
 Well, let's try running those tests, hopefully they'll give a positive outcome:
 
-```sh
+```
 go test -v ./...
 ```
 
@@ -449,7 +469,7 @@ func (f stdHttpFetcher) FetchLinks(targetURL string) (time.Duration, []*url.URL,
 
 Running the simple unit tests we written should result in a success outcome
 
-```sh
+```
 go test -v ./...
 === RUN   TestStdHttpFetcherFetch
 --- PASS: TestStdHttpFetcherFetch (0.00s)
@@ -463,7 +483,7 @@ ok  	webcrawler/fetcher	0.006s
 
 The project structure should be the following
 
-```sh
+```
 tree
 .
 ├── fetcher
