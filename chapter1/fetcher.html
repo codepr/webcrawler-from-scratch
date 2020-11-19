@@ -148,7 +148,7 @@
                 <a href="./">
             
                     
-                    Web crawler
+                    Crawling service
             
                 </a>
             
@@ -260,9 +260,11 @@
                                 <section class="normal markdown-section">
                                 
                                 <h1 id="fetching-and-parsing-html-contents">Fetching and parsing HTML contents</h1>
-<p>Now that we have a top-down picture of the behavior we expect our crawler should
-have, we can move on to lower levels and focus on every little brick we
-need to build in order to reach our goal.</p>
+<p>Now that we have a full picture of the behavior we expect our crawler should
+have, we can move on to lower levels and focus on every little brick we need to
+build in order to reach our goal. In this cases, applying TDD comes naturally
+by adopting a bottom-up approach to the design of the system, independent units
+linked together to form a bigger system, piece by piece.</p>
 <p>The first component we&apos;re going to design and implement is the HTTP fetching
 object, basically a wrapper around an HTTP client that navigates through the
 HTML tree of each fetched page and extracts every link found.</p>
@@ -724,7 +726,7 @@ ok      webcrawler/fetcher    0.006s
 
             
                 
-                <a href="./" class="navigation navigation-prev " aria-label="Previous page: Web crawler">
+                <a href="./" class="navigation navigation-prev " aria-label="Previous page: Crawling service">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
@@ -740,7 +742,7 @@ ok      webcrawler/fetcher    0.006s
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Web crawler","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-17T20:41:15.282Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Crawling service","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-19T17:13:05.653Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-17T20:24:37.624Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
