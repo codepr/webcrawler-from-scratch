@@ -455,9 +455,12 @@ func (f stdHttpFetcher) FetchLinks(targetURL string) (time.Duration, []*url.URL,
 	// Extract base domain from the url
 	baseDomain := parseStartURL(targetURL)
 	elapsed, resp, err := f.Fetch(targetURL)
-	if err != nil || resp.StatusCode >= http.StatusBadRequest {
+	if err != nil {
 		return elapsed, nil, fmt.Errorf("fetching links from %s failed: %w", targetURL, err)
 	}
+    if resp.StatusCode >= http.StatusBadRequest {
+		return elapsed, nil, fmt.Errorf("fetching links from %s failed: %s", targetURL, resp.Status)
+    }
 	defer resp.Body.Close()
 	links, err := f.parser.Parse(baseDomain, resp.Body)
 	if err != nil {
