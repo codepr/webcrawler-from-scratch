@@ -2,9 +2,9 @@
 
 Now that we have a full picture of the behavior we expect our crawler should
 have, we can move on to lower levels and focus on every little brick we need to
-build in order to reach our goal. In this cases, applying TDD comes naturally
-by adopting a bottom-up approach to the design of the system, independent units
-linked together to form a bigger system, piece by piece.
+build in order to reach our goal. In this cases, application of TDD comes
+naturally by adopting a bottom-up approach to the design of the system,
+independent units linked together to form a bigger system, piece by piece.
 
 The first component we're going to design and implement is the HTTP fetching
 object, basically a wrapper around an HTTP client that navigates through the
