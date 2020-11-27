@@ -80,8 +80,9 @@ func main() {
 	// We create a ChannelQueue instance here, ideally it could be a
 	// RabbitMQ/AWS SQS task queue
 	bus := messaging.NewChannelQueue()
+    userAgent string = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 	go func() { printEvents(&bus) }()
-	c := crawler.NewFromEnv(&bus,
+	c := crawler.New(userAgent, &bus,
 		withMaxDepth(maxDepth),
 		withConcurrency(concurrency),
 	)
