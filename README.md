@@ -7,11 +7,11 @@ complexity and vastity? How does the search engine indexes all those websites
 and correlate their contents with the input string?
 
 We'll try to answer some of these questions by building a simplified version of
-the main component that power every search engine at his simplest: a
-web crawler. We won't cover all sofistications and fine algorithms of ranking at
-the core of the google engine, they're the result of years of research and
-improvements and it would require a book on its own just to scratch the surface
-on those topics.
+the main component that power every search engine at his simplest: a web
+crawler. We won't cover all sofistications and ranking algorithms at the core
+of the google engine, they're the result of years of research and improvements
+and it would require a book on its own just to scratch the surface on those
+topics.
 
 This will be a tutorial on how to build something akin to a raw search engine
 starting from its inner-most component and extending it by adding features
