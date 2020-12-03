@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>Introducing a middleware · GitBook</title>
+        <title>2.3. Introducing a middleware · GitBook</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.3">
@@ -103,7 +103,7 @@
                 <a href="../chapter0/">
             
                     
-                    Project setup
+                    1. Project setup
             
                 </a>
             
@@ -117,7 +117,7 @@
                 <a href="../chapter0/installation.html">
             
                     
-                    Go installation
+                    1.1. Go installation
             
                 </a>
             
@@ -130,7 +130,7 @@
                 <a href="../chapter0/environment.html">
             
                     
-                    Dev. environment
+                    1.2. Dev. environment
             
                 </a>
             
@@ -148,7 +148,7 @@
                 <a href="./">
             
                     
-                    Crawling service
+                    2. Crawling service
             
                 </a>
             
@@ -162,7 +162,7 @@
                 <a href="fetcher.html">
             
                     
-                    Fetch and parse
+                    2.1. Fetch and parse
             
                 </a>
             
@@ -175,7 +175,7 @@
                 <a href="crawling-logic.html">
             
                     
-                    Crawling logic
+                    2.2. Crawling logic
             
                 </a>
             
@@ -188,7 +188,7 @@
                 <a href="messaging.html">
             
                     
-                    Introducing a middleware
+                    2.3. Introducing a middleware
             
                 </a>
             
@@ -201,7 +201,7 @@
                 <a href="crawling-rules.html">
             
                     
-                    Crawling rules
+                    2.4. Crawling rules
             
                 </a>
             
@@ -214,7 +214,7 @@
                 <a href="main.html">
             
                     
-                    First run
+                    2.5. First run
             
                 </a>
             
@@ -257,7 +257,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href=".." >Introducing a middleware</a>
+        <a href=".." >2.3. Introducing a middleware</a>
     </h1>
 </div>
 
@@ -303,9 +303,17 @@ mostly perceive it, so the best practice is to maintain the interfaces as
 little as possible, and it really makes sense as every interface defines an
 enforcement, a contract that must be fulfilled, the less you have to implement
 to be compliant the better.</p>
-<p>For our application it&apos;s not strictly required to follow the rule, but for the
-sake of readability and extensibility for future additions we&apos;ll stick to it
-by adding three generic communication interfaces:</p>
+<p>We&apos;ve seen how Go best approach to abstractions is to not abstract at all until
+needed, good news is that, given the inherent pragmatism of the language, we&apos;re
+allowed to break the rules sometimes, according to common sense.<br>
+In this case, we&apos;re reasonably sure that for our application we&apos;re going to
+need a simple communication channel that enables two operations:</p>
+<ul>
+<li>Production</li>
+<li>Consumption</li>
+</ul>
+<p>But for the sake of readability and extensibility for future additions we&apos;ll
+stick to Rob Pike&apos;s quote by adding three generic communication interfaces:</p>
 <p><strong>messaging/queue.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// Package messaging contains middleware for communication with decoupled</span>
 <span class="hljs-comment">// services, could be RabbitMQ drivers as well as kafka or redis</span>
@@ -537,6 +545,8 @@ add the forwarding code into the main <code>crawlPage</code> loop:</p>
 <span class="hljs-addition">+    // components of the architecture, decoupling business logic from processing,</span>
 <span class="hljs-addition">+    // storage or presentation layers</span>
 <span class="hljs-addition">+    queue messaging.Producer</span>
+    // linkFetcher is a LinkFetcher object, must expose Fetch and FetchLinks methods
+    linkFetcher LinkFetcher
     // settings is a pointer to `CrawlerSettings` containing some crawler
     // specifications
     settings *CrawlerSettings
@@ -549,6 +559,7 @@ add the forwarding code into the main <code>crawlPage</code> loop:</p>
     crawler := &amp;WebCrawler{
         logger:   log.New(os.Stderr, &quot;crawler: &quot;, log.LstdFlags),
 <span class="hljs-addition">+        queue:    queue,</span>
+        linkFetcher: fetcher.New(userAgent, settings.Parser, settings.FetchTimeout),
         settings: settings,
     }
     return crawler
@@ -639,12 +650,12 @@ most of the time are inserted on the root of the site.</p>
 
             
                 
-                <a href="crawling-logic.html" class="navigation navigation-prev " aria-label="Previous page: Crawling logic">
+                <a href="crawling-logic.html" class="navigation navigation-prev " aria-label="Previous page: 2.2. Crawling logic">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
                 
-                <a href="crawling-rules.html" class="navigation navigation-next " aria-label="Next page: Crawling rules">
+                <a href="crawling-rules.html" class="navigation navigation-next " aria-label="Next page: 2.4. Crawling rules">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -655,7 +666,7 @@ most of the time are inserted on the root of the site.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"next":{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},"previous":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-11-19T20:33:04.890Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-19T20:42:09.888Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"2.3. Introducing a middleware","level":"1.3.3","depth":2,"next":{"title":"2.4. Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},"previous":{"title":"2.2. Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/messaging.md","mtime":"2020-12-03T13:23:53.663Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-12-03T13:29:34.753Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

@@ -101,7 +101,7 @@
                 <a href="chapter0/">
             
                     
-                    Project setup
+                    1. Project setup
             
                 </a>
             
@@ -115,7 +115,7 @@
                 <a href="chapter0/installation.html">
             
                     
-                    Go installation
+                    1.1. Go installation
             
                 </a>
             
@@ -128,7 +128,7 @@
                 <a href="chapter0/environment.html">
             
                     
-                    Dev. environment
+                    1.2. Dev. environment
             
                 </a>
             
@@ -146,7 +146,7 @@
                 <a href="chapter1/">
             
                     
-                    Crawling service
+                    2. Crawling service
             
                 </a>
             
@@ -160,7 +160,7 @@
                 <a href="chapter1/fetcher.html">
             
                     
-                    Fetch and parse
+                    2.1. Fetch and parse
             
                 </a>
             
@@ -173,7 +173,7 @@
                 <a href="chapter1/crawling-logic.html">
             
                     
-                    Crawling logic
+                    2.2. Crawling logic
             
                 </a>
             
@@ -186,7 +186,7 @@
                 <a href="chapter1/messaging.html">
             
                     
-                    Introducing a middleware
+                    2.3. Introducing a middleware
             
                 </a>
             
@@ -199,7 +199,7 @@
                 <a href="chapter1/crawling-rules.html">
             
                     
-                    Crawling rules
+                    2.4. Crawling rules
             
                 </a>
             
@@ -212,7 +212,7 @@
                 <a href="chapter1/main.html">
             
                     
-                    First run
+                    2.5. First run
             
                 </a>
             
@@ -276,11 +276,11 @@ to insert a string and obtain related results from the web, given it&apos;s inhe
 complexity and vastity? How does the search engine indexes all those websites
 and correlate their contents with the input string?</p>
 <p>We&apos;ll try to answer some of these questions by building a simplified version of
-the main component that power every search engine at his simplest: a
-web crawler. We won&apos;t cover all sofistications and fine algorithms of ranking at
-the core of the google engine, they&apos;re the result of years of research and
-improvements and it would require a book on its own just to scratch the surface
-on those topics.</p>
+the main component that power every search engine at his simplest: a web
+crawler. We won&apos;t cover all sofistications and ranking algorithms at the core
+of the google engine, they&apos;re the result of years of research and improvements
+and it would require a book on its own just to scratch the surface on those
+topics.</p>
 <p>This will be a tutorial on how to build something akin to a raw search engine
 starting from its inner-most component and extending it by adding features
 chapter by chapter.<br>
@@ -336,7 +336,7 @@ During the journey we&apos;ll touch many system design concepts:</p>
             
                 
                 
-                <a href="chapter0/" class="navigation navigation-next navigation-unique" aria-label="Next page: Project setup">
+                <a href="chapter0/" class="navigation navigation-next navigation-unique" aria-label="Next page: 1. Project setup">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -347,7 +347,7 @@ During the journey we&apos;ll touch many system design concepts:</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Introduction","level":"1.1","depth":1,"next":{"title":"Project setup","level":"1.2","depth":1,"path":"chapter0/README.md","ref":"chapter0/README.md","articles":[{"title":"Go installation","level":"1.2.1","depth":2,"path":"chapter0/installation.md","ref":"chapter0/installation.md","articles":[]},{"title":"Dev. environment","level":"1.2.2","depth":2,"path":"chapter0/environment.md","ref":"chapter0/environment.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"README.md","mtime":"2020-11-19T18:12:09.097Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-19T20:42:09.888Z"},"basePath":".","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Introduction","level":"1.1","depth":1,"next":{"title":"1. Project setup","level":"1.2","depth":1,"path":"chapter0/README.md","ref":"chapter0/README.md","articles":[{"title":"1.1. Go installation","level":"1.2.1","depth":2,"path":"chapter0/installation.md","ref":"chapter0/installation.md","articles":[]},{"title":"1.2. Dev. environment","level":"1.2.2","depth":2,"path":"chapter0/environment.md","ref":"chapter0/environment.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"README.md","mtime":"2020-11-29T18:54:07.285Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-12-03T13:29:34.753Z"},"basePath":".","book":{"language":""}});
         });
     </script>
 </div>

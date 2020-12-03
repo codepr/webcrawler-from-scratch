@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>Fetch and parse · GitBook</title>
+        <title>2.1. Fetch and parse · GitBook</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.3">
@@ -103,7 +103,7 @@
                 <a href="../chapter0/">
             
                     
-                    Project setup
+                    1. Project setup
             
                 </a>
             
@@ -117,7 +117,7 @@
                 <a href="../chapter0/installation.html">
             
                     
-                    Go installation
+                    1.1. Go installation
             
                 </a>
             
@@ -130,7 +130,7 @@
                 <a href="../chapter0/environment.html">
             
                     
-                    Dev. environment
+                    1.2. Dev. environment
             
                 </a>
             
@@ -148,7 +148,7 @@
                 <a href="./">
             
                     
-                    Crawling service
+                    2. Crawling service
             
                 </a>
             
@@ -162,7 +162,7 @@
                 <a href="fetcher.html">
             
                     
-                    Fetch and parse
+                    2.1. Fetch and parse
             
                 </a>
             
@@ -175,7 +175,7 @@
                 <a href="crawling-logic.html">
             
                     
-                    Crawling logic
+                    2.2. Crawling logic
             
                 </a>
             
@@ -188,7 +188,7 @@
                 <a href="messaging.html">
             
                     
-                    Introducing a middleware
+                    2.3. Introducing a middleware
             
                 </a>
             
@@ -201,7 +201,7 @@
                 <a href="crawling-rules.html">
             
                     
-                    Crawling rules
+                    2.4. Crawling rules
             
                 </a>
             
@@ -214,7 +214,7 @@
                 <a href="main.html">
             
                     
-                    First run
+                    2.5. First run
             
                 </a>
             
@@ -257,7 +257,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href=".." >Fetch and parse</a>
+        <a href=".." >2.1. Fetch and parse</a>
     </h1>
 </div>
 
@@ -275,9 +275,9 @@
                                 <h1 id="fetching-and-parsing-html-contents">Fetching and parsing HTML contents</h1>
 <p>Now that we have a full picture of the behavior we expect our crawler should
 have, we can move on to lower levels and focus on every little brick we need to
-build in order to reach our goal. In this cases, applying TDD comes naturally
-by adopting a bottom-up approach to the design of the system, independent units
-linked together to form a bigger system, piece by piece.</p>
+build in order to reach our goal. In this cases, application of TDD comes
+naturally by adopting a bottom-up approach to the design of the system,
+independent units linked together to form a bigger system, piece by piece.</p>
 <p>The first component we&apos;re going to design and implement is the HTTP fetching
 object, basically a wrapper around an HTTP client that navigates through the
 HTML tree of each fetched page and extracts every link found.</p>
@@ -295,7 +295,9 @@ fetcher:</p>
 </ul>
 <h2 id="parsing-html-documents">Parsing HTML documents</h2>
 <p>So we move on writing some basic unit tests to define the behavior we expect
-from these two parts, starting with the HTML parser.</p>
+from these two parts, starting with the HTML parser. The core feature we want
+to implement is a function that ingests an HTML document and return all the
+links it finds.</p>
 <p><em>Note: After a brief search I found out that GoQuery by PuerkitoBio is the
 easiest and most handy library to parse HTML contents offering a jquery-like
 DSL to navigate through the entire tree. The alternative was the navigation by
@@ -337,13 +339,13 @@ project</em></p>
     }
 }
 </code></pre>
-<p>Let&apos;s now move on with the implementation, we&apos;re going to define a parser
+<p>Let&apos;s now move on with the implementation, we could very well define a parser
 interface exposing a single method <code>Parse(string, *io.Reader)([]*url.URL,
 error)</code>.<br>
 This definition of an interface foreseeing the implementation, is closer to a
 classical OOP style, think about Java usage of interfaces, we&apos;re going to
 define a contract to enforce a behavior; but it&apos;s not really the best and only
-usage of this language feature.</p>
+usage of this language feature. More on this later.</p>
 <h3 id="little-dissertation-over-interfaces-in-go">Little dissertation over interfaces in Go</h3>
 <p>One of the strongest features of Go is that there&apos;s no need to explicitly
 declare when we want to implement an interface, we just need to implement the
@@ -374,6 +376,9 @@ interface. The implication is that interfaces should be declared close to where
 they&apos;re used.<br> This is really akin to a duck-typing behavior at compile
 time, and it&apos;s enabled by this feature of Go, making it, for some aspects,
 really similar to dynamic languages like Python or Ruby.</p>
+<p>So to start grasping the problem we prefer to just start with a concrete
+implementation, we&apos;re going to decide later where and when (and if) we&apos;re
+going to need a general abstraction.</p>
 <p><strong>fetcher/parser.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-comment">// Package fetcher defines and implement the fetching and parsing utilities</span>
 <span class="hljs-comment">// for remote resources</span>
@@ -387,12 +392,6 @@ really similar to dynamic languages like Python or Ruby.</p>
 
     <span class="hljs-string">&quot;github.com/PuerkitoBio/goquery&quot;</span>
 )
-
-<span class="hljs-comment">// Parser is an interface exposing a single method `Parse`, to be used on</span>
-<span class="hljs-comment">// raw results of a fetch call</span>
-<span class="hljs-keyword">type</span> Parser <span class="hljs-keyword">interface</span> {
-    Parse(<span class="hljs-keyword">string</span>, io.Reader) ([]*url.URL, error)
-}
 
 <span class="hljs-comment">// GoqueryParser is just an algorithm `Parser` definition that uses</span>
 <span class="hljs-comment">// `github.com/PuerkitoBio/goquery` as a backend library</span>
@@ -501,8 +500,9 @@ communication protocol used to fetch outside contents from websites is HTTP,
 so the core component of the <code>fetcher</code> package will be an HTTP client.</p>
 <p>The next step is the definition of fetching unit tests, what we expect here is
 the possibility to simply fetch a single link, ignoring its content and
-fetching a link extracting all contained links.<br>We&apos;re probably going to
-defines two interfaces for these tasks, <code>Fetcher</code> and <code>LinkFetcher</code>.</p>
+fetching a link extracting all contained links.</p>
+<p>We&apos;re going to mock a server probably, luckily Go provides us everything we
+need in the <code>net/http/httptest</code>.</p>
 <p><strong>fetcher/fetcher_test.go</strong></p>
 <pre><code class="lang-go"><span class="hljs-keyword">package</span> fetcher
 
@@ -592,6 +592,7 @@ to trace when something like that happens.</em></p>
 <span class="hljs-keyword">import</span> (
     <span class="hljs-string">&quot;crypto/tls&quot;</span>
     <span class="hljs-string">&quot;fmt&quot;</span>
+    <span class="hljs-string">&quot;io&quot;</span>
     <span class="hljs-string">&quot;net/http&quot;</span>
     <span class="hljs-string">&quot;net/url&quot;</span>
     <span class="hljs-string">&quot;time&quot;</span>
@@ -599,12 +600,10 @@ to trace when something like that happens.</em></p>
     <span class="hljs-string">&quot;github.com/PuerkitoBio/rehttp&quot;</span>
 )
 
-<span class="hljs-comment">// Fetcher is an interface exposing a method to fetch resources, Fetch enable</span>
-<span class="hljs-comment">// raw contents download.</span>
-<span class="hljs-keyword">type</span> Fetcher <span class="hljs-keyword">interface</span> {
-    <span class="hljs-comment">// Fetch makes an HTTP GET request to an URL returning a `*http.Response` or</span>
-    <span class="hljs-comment">// any error occured</span>
-    Fetch(<span class="hljs-keyword">string</span>) (time.Duration, *http.Response, error)
+<span class="hljs-comment">// Parser is an interface exposing a single method `Parse`, to be used on</span>
+<span class="hljs-comment">// raw results of a fetch call</span>
+<span class="hljs-keyword">type</span> Parser <span class="hljs-keyword">interface</span> {
+    Parse(<span class="hljs-keyword">string</span>, io.Reader) ([]*url.URL, error)
 }
 
 <span class="hljs-comment">// stdHttpFetcher is a simple Fetcher with std library http.Client as a</span>
@@ -651,26 +650,28 @@ to trace when something like that happens.</em></p>
     <span class="hljs-keyword">return</span> elapsed, res, <span class="hljs-literal">nil</span>
 }
 </code></pre>
-<p>Now that we have a simple <code>Fetcher</code> interface, we can easily extend his
+<p>Now that we have a simple <code>Fetch</code> method, we can easily extend that
 behavior to fetch the page content and extract all the contained links, finally
-using that <code>parser</code> interface we have inserted into the <code>stdHttpFetcher</code>.</p>
-<p>We want to maintain the separation between <code>Fetcher</code> and <code>LinkFetcher</code>
-interfaces in order to maintain single responsibilities to each component and
-because we&apos;re going to need the simple HTTP request capability later.</p>
-<p><em>Note: in the <code>Fetcher</code> interface and in the <code>LinkFetcher</code> one, both exported
-methods return also a <code>time.Duration</code> as first value, that is the wall time of
-the call, telling us the time elapsed to make the HTTP call. It&apos;ll return
-useful later for calculating a politeness delay during the crawling process</em></p>
+using that <code>Parser</code> interface we have inserted into the <code>stdHttpFetcher</code>.</p>
+<p>Go&apos;s approach to abstractions through interfaces is immediately highlighted in
+the snippet above: we declared a <code>Parser</code> interface <strong>after</strong> the concrete
+implementation of <code>GoqueryParser</code>, as we previously discussed, this is somewhat
+confusing for ordinary OOP patterns of pre-declaring interfaces as contract,
+enforcing a behavior for every concrete type (like in Java for example).<br>
+Languages that requires explicit implementation of interfaces promote that
+style, where you want to predict the abstraction you&apos;re going to implement. Go
+instead allows to implement interfaces implicitly by just implementing their
+methods. This unlocks a more flexible style, which promotes a better
+understanding of the problem before abstracting away details; thus in Go
+interfaces is generally declared closer to their clients. This way it&apos;s the
+client that dictates the abstraction needed and not the other way around,
+making the entire development process more flixible.</p>
+<p><em>Note: the <code>Fetch</code> and <code>FetchLinks</code> methods, return also a <code>time.Duration</code> as
+first value, that is the wall time of the call, telling us the time elapsed to
+make the HTTP call. It&apos;ll return useful later for calculating a politeness
+delay during the crawling process</em></p>
 <p><strong>fetcher/fetcher.go</strong></p>
-<pre><code class="lang-go"><span class="hljs-comment">// LinkFetcher is an interface exposing a method to download raw contents and</span>
-<span class="hljs-comment">// parse them extracting all outgoing links.</span>
-<span class="hljs-keyword">type</span> LinkFetcher <span class="hljs-keyword">interface</span> {
-    <span class="hljs-comment">// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the</span>
-    <span class="hljs-comment">// response and returns an array of URLs or any error occured</span>
-    FetchLinks(<span class="hljs-keyword">string</span>) (time.Duration, []*url.URL, error)
-}
-
-<span class="hljs-comment">// Parse an URL extracting the protion &lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;</span>
+<pre><code class="lang-go"><span class="hljs-comment">// Parse an URL extracting the protion &lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;</span>
 <span class="hljs-comment">// Returns a string with the base domain of the URL</span>
 <span class="hljs-keyword">func</span> parseStartURL(u <span class="hljs-keyword">string</span>) <span class="hljs-keyword">string</span> {
     parsed, _ := url.Parse(u)
@@ -688,10 +689,13 @@ useful later for calculating a politeness delay during the crawling process</em>
     <span class="hljs-comment">// Extract base domain from the url</span>
     baseDomain := parseStartURL(targetURL)
     elapsed, resp, err := f.Fetch(targetURL)
-    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> || resp.StatusCode &gt;= http.StatusBadRequest {
+    <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
         <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: %w&quot;</span>, targetURL, err)
     }
     <span class="hljs-keyword">defer</span> resp.Body.Close()
+    <span class="hljs-keyword">if</span> resp.StatusCode &gt;= http.StatusBadRequest {
+        <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: %s&quot;</span>, targetURL, resp.Status)
+    }
     links, err := f.parser.Parse(baseDomain, resp.Body)
     <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
         <span class="hljs-keyword">return</span> elapsed, <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">&quot;fetching links from %s failed: %w&quot;</span>, targetURL, err)
@@ -749,12 +753,12 @@ ok      webcrawler/fetcher    0.006s
 
             
                 
-                <a href="./" class="navigation navigation-prev " aria-label="Previous page: Crawling service">
+                <a href="./" class="navigation navigation-prev " aria-label="Previous page: 2. Crawling service">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
                 
-                <a href="crawling-logic.html" class="navigation navigation-next " aria-label="Next page: Crawling logic">
+                <a href="crawling-logic.html" class="navigation navigation-next " aria-label="Next page: 2.2. Crawling logic">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -765,7 +769,7 @@ ok      webcrawler/fetcher    0.006s
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"Crawling service","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},{"title":"First run","level":"1.3.5","depth":2,"path":"chapter1/main.md","ref":"chapter1/main.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-11-19T20:29:39.611Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-19T20:42:09.888Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"2.1. Fetch and parse","level":"1.3.1","depth":2,"next":{"title":"2.2. Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},"previous":{"title":"2. Crawling service","level":"1.3","depth":1,"path":"chapter1/README.md","ref":"chapter1/README.md","articles":[{"title":"2.1. Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},{"title":"2.2. Crawling logic","level":"1.3.2","depth":2,"path":"chapter1/crawling-logic.md","ref":"chapter1/crawling-logic.md","articles":[]},{"title":"2.3. Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},{"title":"2.4. Crawling rules","level":"1.3.4","depth":2,"path":"chapter1/crawling-rules.md","ref":"chapter1/crawling-rules.md","articles":[]},{"title":"2.5. First run","level":"1.3.5","depth":2,"path":"chapter1/main.md","ref":"chapter1/main.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/fetcher.md","mtime":"2020-12-03T13:13:57.077Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-12-03T13:29:34.753Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

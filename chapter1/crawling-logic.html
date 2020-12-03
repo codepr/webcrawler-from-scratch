@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>Crawling logic · GitBook</title>
+        <title>2.2. Crawling logic · GitBook</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.3">
@@ -103,7 +103,7 @@
                 <a href="../chapter0/">
             
                     
-                    Project setup
+                    1. Project setup
             
                 </a>
             
@@ -117,7 +117,7 @@
                 <a href="../chapter0/installation.html">
             
                     
-                    Go installation
+                    1.1. Go installation
             
                 </a>
             
@@ -130,7 +130,7 @@
                 <a href="../chapter0/environment.html">
             
                     
-                    Dev. environment
+                    1.2. Dev. environment
             
                 </a>
             
@@ -148,7 +148,7 @@
                 <a href="./">
             
                     
-                    Crawling service
+                    2. Crawling service
             
                 </a>
             
@@ -162,7 +162,7 @@
                 <a href="fetcher.html">
             
                     
-                    Fetch and parse
+                    2.1. Fetch and parse
             
                 </a>
             
@@ -175,7 +175,7 @@
                 <a href="crawling-logic.html">
             
                     
-                    Crawling logic
+                    2.2. Crawling logic
             
                 </a>
             
@@ -188,7 +188,7 @@
                 <a href="messaging.html">
             
                     
-                    Introducing a middleware
+                    2.3. Introducing a middleware
             
                 </a>
             
@@ -201,7 +201,7 @@
                 <a href="crawling-rules.html">
             
                     
-                    Crawling rules
+                    2.4. Crawling rules
             
                 </a>
             
@@ -214,7 +214,7 @@
                 <a href="main.html">
             
                     
-                    First run
+                    2.5. First run
             
                 </a>
             
@@ -257,7 +257,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href=".." >Crawling logic</a>
+        <a href=".." >2.2. Crawling logic</a>
     </h1>
 </div>
 
@@ -284,9 +284,9 @@ only some of the questions that arises during the design of our crawler.</p>
 crawling settings, defining the behavior of the crawler.</p>
 <p>What we want to be able to configure is:</p>
 <ul>
-<li><code>fetchingTimeout</code>, the number of (m)s to wait before declaring the link
+<li><code>fetchTimeout</code>, the number of (m)s to wait before declaring the link
 unreachable if it&apos;s hanging</li>
-<li><code>crawlingTimeout</code>, the number of (m)s to wait after the last link we found
+<li><code>crawlTimeout</code>, the number of (m)s to wait after the last link we found
 in the last crawled page, after which we declare the crawling done</li>
 <li><code>politenessDelay</code>, the number of (m)s to wait after an HTTP request before
 making another under the same domain</li>
@@ -331,6 +331,7 @@ on disk</li>
     <span class="hljs-string">&quot;context&quot;</span>
     <span class="hljs-string">&quot;encoding/json&quot;</span>
     <span class="hljs-string">&quot;log&quot;</span>
+    <span class="hljs-string">&quot;net/http&quot;</span>
     <span class="hljs-string">&quot;net/url&quot;</span>
     <span class="hljs-string">&quot;os&quot;</span>
     <span class="hljs-string">&quot;os/signal&quot;</span>
@@ -347,7 +348,7 @@ on disk</li>
     defaultFetchTimeout time.Duration = <span class="hljs-number">10</span> * time.Second
     <span class="hljs-comment">// Default crawling timeout, time to wait to stop the crawl after no links are</span>
     <span class="hljs-comment">// found</span>
-    defaultCrawlingTimeout time.Duration = <span class="hljs-number">30</span> * time.Second
+    defaultCrawlTimeout time.Duration = <span class="hljs-number">30</span> * time.Second
     <span class="hljs-comment">// Default politeness delay, fixed delay to calculate a randomized wait time</span>
     <span class="hljs-comment">// for subsequent HTTP calls to a domain</span>
     defaultPolitenessDelay time.Duration = <span class="hljs-number">500</span> * time.Millisecond
@@ -359,6 +360,23 @@ on disk</li>
     defaultUserAgent <span class="hljs-keyword">string</span> = <span class="hljs-string">&quot;Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)&quot;</span>
 )
 
+<span class="hljs-comment">// Fetcher is an interface exposing a method to fetch resources, Fetch enable</span>
+<span class="hljs-comment">// raw contents download.</span>
+<span class="hljs-keyword">type</span> Fetcher <span class="hljs-keyword">interface</span> {
+    <span class="hljs-comment">// Fetch makes an HTTP GET request to an URL returning a `*http.Response` or</span>
+    <span class="hljs-comment">// any error occured</span>
+    Fetch(<span class="hljs-keyword">string</span>) (time.Duration, *http.Response, error)
+}
+
+<span class="hljs-comment">// LinkFetcher is an interface exposing a methdo to download raw contents and</span>
+<span class="hljs-comment">// parse them extracting all outgoing links.</span>
+<span class="hljs-keyword">type</span> LinkFetcher <span class="hljs-keyword">interface</span> {
+    Fetcher
+    <span class="hljs-comment">// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the</span>
+    <span class="hljs-comment">// response and returns an array of URLs or any error occured</span>
+    FetchLinks(<span class="hljs-keyword">string</span>) (time.Duration, []*url.URL, error)
+}
+
 <span class="hljs-comment">// ParsedResult contains the URL crawled and an array of links found, json</span>
 <span class="hljs-comment">// serializable to be sent on message queues</span>
 <span class="hljs-keyword">type</span> ParsedResult <span class="hljs-keyword">struct</span> {
@@ -369,12 +387,12 @@ on disk</li>
 <span class="hljs-comment">// CrawlerSettings represents general settings for the crawler and his</span>
 <span class="hljs-comment">// dependencies</span>
 <span class="hljs-keyword">type</span> CrawlerSettings <span class="hljs-keyword">struct</span> {
-    <span class="hljs-comment">// FetchingTimeout is the time to wait before closing a connection that does not</span>
+    <span class="hljs-comment">// FetchTimeout is the time to wait before closing a connection that does not</span>
     <span class="hljs-comment">// respond</span>
-    FetchingTimeout time.Duration
-    <span class="hljs-comment">// CrawlingTimeout is the number of second to wait before exiting the crawling</span>
+    FetchTimeout time.Duration
+    <span class="hljs-comment">// CrawlTimeout is the number of second to wait before exiting the crawling</span>
     <span class="hljs-comment">// in case of no links found</span>
-    CrawlingTimeout time.Duration
+    CrawlTimeout time.Duration
     <span class="hljs-comment">// Concurrency is the number of concurrent goroutine to run while fetching</span>
     <span class="hljs-comment">// a page. 0 means unbounded</span>
     Concurrency <span class="hljs-keyword">int</span>
@@ -398,6 +416,8 @@ on disk</li>
 <span class="hljs-keyword">type</span> WebCrawler <span class="hljs-keyword">struct</span> {
     <span class="hljs-comment">// logger is a private logger instance</span>
     logger *log.Logger
+    <span class="hljs-comment">// linkFetcher is a LinkFetcher object, must expose Fetch and FetchLinks methods</span>
+    linkFetcher LinkFetcher
     <span class="hljs-comment">// settings is a pointer to `CrawlerSettings` containing some crawler</span>
     <span class="hljs-comment">// specifications</span>
     settings *CrawlerSettings
@@ -410,16 +430,17 @@ on disk</li>
 <span class="hljs-keyword">func</span> New(userAgent <span class="hljs-keyword">string</span>) *WebCrawler {
     <span class="hljs-comment">// Default crawler settings</span>
     settings := &amp;CrawlerSettings{
-        FetchingTimeout:      defaultFetchTimeout,
+        FetchTimeout:         defaultFetchTimeout,
         Parser:               fetcher.NewGoqueryParser(),
         UserAgent:            userAgent,
-        CrawlingTimeout:      defaultCrawlingTimeout,
+        CrawlTimeout:         defaultCrawlTimeout,
         PolitenessFixedDelay: defaultPolitenessDelay,
         Concurrency:          defaultConcurrency,
     }
     crawler := &amp;WebCrawler{
-        logger:   log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
-        settings: settings,
+        logger:      log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
+        linkFetcher: fetcher.New(userAgent, settings.Parser, settings.FetchTimeout),
+        settings:    settings,
     }
     <span class="hljs-keyword">return</span> crawler
 }
@@ -428,10 +449,16 @@ on disk</li>
 <span class="hljs-keyword">func</span> NewFromSettings(settings *CrawlerSettings) *WebCrawler {
     <span class="hljs-keyword">return</span> &amp;WebCrawler{
         logger:   log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
+        linkFetcher: fetcher.New(settings.UserAgent, settings.Parser, settings.FetchTimeout),
         settings: settings,
     }
 }
 </code></pre>
+<p><em>Note: as shown, we declared again two interfaces that we&apos;re going to need
+after the concrete implementation, also we want to maintain the separation
+between <code>Fetcher</code> and <code>LinkFetcher</code> interfaces in order to maintain single
+responsibilities to each component, and making it easier for clients to
+implement the interfaces, less is more.</em></p>
 <p>As we can see, the number of settings is high and a little uncomfortable to
 manage with constructor functions, this is a good case to adopt an opt pattern,
 a common build pattern in Go, let&apos;s modify the <code>New</code> function:</p>
@@ -447,10 +474,10 @@ a common build pattern in Go, let&apos;s modify the <code>New</code> function:</
 <span class="hljs-keyword">func</span> New(userAgent <span class="hljs-keyword">string</span>, opts ...CrawlerOpt) *WebCrawler {
     <span class="hljs-comment">// Default crawler settings</span>
     settings := &amp;CrawlerSettings{
-        FetchingTimeout:      defaultFetchTimeout,
+        FetchTimeout:         defaultFetchTimeout,
         Parser:               fetcher.NewGoqueryParser(),
         UserAgent:            userAgent,
-        CrawlingTimeout:      defaultCrawlingTimeout,
+        CrawlTimeout:         defaultCrawlTimeout,
         PolitenessFixedDelay: defaultPolitenessDelay,
         Concurrency:          defaultConcurrency,
     }
@@ -459,8 +486,9 @@ a common build pattern in Go, let&apos;s modify the <code>New</code> function:</
         opt(settings)
     }
     crawler := &amp;WebCrawler{
-        logger:   log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
-        settings: settings,
+        logger:      log.New(os.Stderr, <span class="hljs-string">&quot;crawler: &quot;</span>, log.LstdFlags),
+        linkFetcher: fetcher.New(userAgent, settings.Parser, settings.FetchTimeout),
+        settings:    settings,
     }
     <span class="hljs-keyword">return</span> crawler
 }
@@ -516,8 +544,6 @@ before blocking.</li>
     <span class="hljs-comment">// First we wanna make sure we decrease the waitgroup counter at the end of</span>
     <span class="hljs-comment">// the crawling</span>
     <span class="hljs-keyword">defer</span> wg.Done()
-    fetchClient := fetcher.New(c.settings.UserAgent,
-        c.settings.Parser, c.settings.FetchingTimeout)
     <span class="hljs-keyword">var</span> (
         <span class="hljs-comment">// semaphore is just a value-less channel used to limit the number of</span>
         <span class="hljs-comment">// concurrent goroutine workers fetching links</span>
@@ -579,7 +605,7 @@ before blocking.</li>
                         &lt;-semaphore
                     }()
                     <span class="hljs-comment">// We fetch the current link here and parse HTML for children links</span>
-                    _, foundLinks, err := fetchClient.FetchLinks(link.String())
+                    _, foundLinks, err := c.linkFetcher.FetchLinks(link.String())
                     <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
                         c.logger.Println(err)
                         <span class="hljs-keyword">return</span>
@@ -600,8 +626,8 @@ before blocking.</li>
                     stop = c.settings.MaxDepth &gt; <span class="hljs-number">0</span> &amp;&amp; depth &gt;= c.settings.MaxDepth
                 }
             }
-        <span class="hljs-keyword">case</span> &lt;-time.After(c.settings.CrawlingTimeout):
-            <span class="hljs-comment">// c.settings.CrawlingTimeout seconds without any new link found, check</span>
+        <span class="hljs-keyword">case</span> &lt;-time.After(c.settings.CrawlTimeout):
+            <span class="hljs-comment">// c.settings.CrawlTimeout seconds without any new link found, check</span>
             <span class="hljs-comment">// that the remaining links have been processed and stop the iteration</span>
             <span class="hljs-keyword">if</span> atomic.LoadInt32(&amp;linkCounter) &lt;= <span class="hljs-number">0</span> {
                 stop = <span class="hljs-literal">true</span>
@@ -716,12 +742,12 @@ unit tests and one for source, this the current project structure so far:</p>
 
             
                 
-                <a href="fetcher.html" class="navigation navigation-prev " aria-label="Previous page: Fetch and parse">
+                <a href="fetcher.html" class="navigation navigation-prev " aria-label="Previous page: 2.1. Fetch and parse">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
                 
-                <a href="messaging.html" class="navigation navigation-next " aria-label="Next page: Introducing a middleware">
+                <a href="messaging.html" class="navigation navigation-next " aria-label="Next page: 2.3. Introducing a middleware">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -732,7 +758,7 @@ unit tests and one for source, this the current project structure so far:</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling logic","level":"1.3.2","depth":2,"next":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"previous":{"title":"Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-11-19T20:33:15.791Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-19T20:42:09.888Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"2.2. Crawling logic","level":"1.3.2","depth":2,"next":{"title":"2.3. Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"previous":{"title":"2.1. Fetch and parse","level":"1.3.1","depth":2,"path":"chapter1/fetcher.md","ref":"chapter1/fetcher.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-logic.md","mtime":"2020-12-03T13:15:44.846Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-12-03T13:29:34.753Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

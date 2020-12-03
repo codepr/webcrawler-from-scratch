@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>Crawling rules · GitBook</title>
+        <title>2.4. Crawling rules · GitBook</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.3">
@@ -103,7 +103,7 @@
                 <a href="../chapter0/">
             
                     
-                    Project setup
+                    1. Project setup
             
                 </a>
             
@@ -117,7 +117,7 @@
                 <a href="../chapter0/installation.html">
             
                     
-                    Go installation
+                    1.1. Go installation
             
                 </a>
             
@@ -130,7 +130,7 @@
                 <a href="../chapter0/environment.html">
             
                     
-                    Dev. environment
+                    1.2. Dev. environment
             
                 </a>
             
@@ -148,7 +148,7 @@
                 <a href="./">
             
                     
-                    Crawling service
+                    2. Crawling service
             
                 </a>
             
@@ -162,7 +162,7 @@
                 <a href="fetcher.html">
             
                     
-                    Fetch and parse
+                    2.1. Fetch and parse
             
                 </a>
             
@@ -175,7 +175,7 @@
                 <a href="crawling-logic.html">
             
                     
-                    Crawling logic
+                    2.2. Crawling logic
             
                 </a>
             
@@ -188,7 +188,7 @@
                 <a href="messaging.html">
             
                     
-                    Introducing a middleware
+                    2.3. Introducing a middleware
             
                 </a>
             
@@ -201,7 +201,7 @@
                 <a href="crawling-rules.html">
             
                     
-                    Crawling rules
+                    2.4. Crawling rules
             
                 </a>
             
@@ -214,7 +214,7 @@
                 <a href="main.html">
             
                     
-                    First run
+                    2.5. First run
             
                 </a>
             
@@ -257,7 +257,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href=".." >Crawling rules</a>
+        <a href=".." >2.4. Crawling rules</a>
     </h1>
 </div>
 
@@ -306,6 +306,7 @@ requests per unit of time, in the form of a <code>politenessDelay</code>, but we
 better, we&apos;re going to add a new object specifically responsible of the
 managing of these rules, we expect it to:</p>
 <ul>
+<li>Be able to fetch the <code>robots.txt</code> file, if any</li>
 <li>Be able to parse <code>robots.txt</code> files</li>
 <li>Be able to calculate a good delay between calls, taking into consideration
 robots rules, the politeness delay and the response time of each call</li>
@@ -329,7 +330,14 @@ simple server mock with a fake <code>robots.txt</code> path to be parsed.</p>
     <span class="hljs-string">&quot;net/url&quot;</span>
     <span class="hljs-string">&quot;testing&quot;</span>
     <span class="hljs-string">&quot;time&quot;</span>
+
+    <span class="hljs-string">&quot;webcrawler/fetcher&quot;</span>
 )
+
+
+<span class="hljs-keyword">const</span> userAgent = <span class="hljs-string">&quot;test-agent&quot;</span>
+
+<span class="hljs-keyword">var</span> f = fetcher.New(userAgent, <span class="hljs-literal">nil</span>, <span class="hljs-number">10</span>*time.Second)
 
 <span class="hljs-keyword">func</span> serverMock() *httptest.Server {
     handler := http.NewServeMux()
@@ -362,7 +370,7 @@ simple server mock with a fake <code>robots.txt</code> path to be parsed.</p>
     <span class="hljs-keyword">if</span> !r.Allowed(testLink) {
         t.Errorf(<span class="hljs-string">&quot;CrawlingRules#IsAllowed failed: expected true got false&quot;</span>)
     }
-    r.GetRobotsTxtGroup(<span class="hljs-string">&quot;test-agent&quot;</span>, serverURL)
+    r.GetRobotsTxtGroup(f, userAgent, serverURL)
     <span class="hljs-keyword">if</span> r.Allowed(testLink) {
         t.Errorf(<span class="hljs-string">&quot;CrawlingRules#IsAllowed failed: expected false got true&quot;</span>)
     }
@@ -376,7 +384,7 @@ simple server mock with a fake <code>robots.txt</code> path to be parsed.</p>
     <span class="hljs-keyword">defer</span> server.Close()
     serverURL, _ := url.Parse(server.URL)
     r := NewCrawlingRules(<span class="hljs-number">100</span>*time.Millisecond)
-    <span class="hljs-keyword">if</span> r.GetRobotsTxtGroup(<span class="hljs-string">&quot;test-agent&quot;</span>, serverURL) {
+    <span class="hljs-keyword">if</span> r.GetRobotsTxtGroup(f, userAgent, serverURL) {
         t.Errorf(<span class="hljs-string">&quot;CrawlingRules#GetRobotsTxtGroup failed&quot;</span>)
     }
 }
@@ -404,8 +412,8 @@ workers access it if needed to delay their next call, so we&apos;re going to nee
 a full lock on update (write) and just a read lock on read.</p>
 <p>The <code>CrawlingRules</code> object as we designed it will expose four methods:</p>
 <ul>
-<li><code>GetRobotsTxtGroup(userAgent string, domain *url.URL) bool</code>, tries to
-retrieve the <code>robots.txt</code> file and parse it from the domain root, return
+<li><code>GetRobotsTxtGroup(f Fetcher, userAgent string, domain *url.URL) bool</code>, tries
+to retrieve the <code>robots.txt</code> file and parse it from the domain root, return
 <code>true</code> if a valid file is found</li>
 <li><code>Allowed(url *url.URL) bool</code>, return the validity of an URL according to the
 rules, <code>true</code> means that it can be crawled</li>
@@ -475,8 +483,7 @@ next HTTP call</li>
 
 <span class="hljs-comment">// GetRobotsTxtGroup tryes to fetch the robots.txt from the domain and parse</span>
 <span class="hljs-comment">// it. Returns a boolean based on the success of the process.</span>
-<span class="hljs-keyword">func</span> (r *CrawlingRules) GetRobotsTxtGroup(userAgent <span class="hljs-keyword">string</span>, domain *url.URL) <span class="hljs-keyword">bool</span> {
-    f := fetcher.New(userAgent, <span class="hljs-literal">nil</span>, <span class="hljs-number">10</span>*time.Second)
+<span class="hljs-keyword">func</span> (r *CrawlingRules) GetRobotsTxtGroup(f Fetcher, userAgent <span class="hljs-keyword">string</span>, domain *url.URL) <span class="hljs-keyword">bool</span> {
     u, _ := url.Parse(robotsTxtPath)
     targetURL := domain.ResolveReference(u)
     <span class="hljs-comment">// Try to fetch the robots.txt file</span>
@@ -500,7 +507,8 @@ used to retrieve the <code>robots.txt</code>, generally located in the root at
 domain:port/robots.txt.</p>
 <p>The crawling delay can be designed in a moltitude of ways, we opt for a way
 that should favor the server reaction time over the <code>politenessDelay</code> that&apos;s
-configured at the start of the application, basically following this formula:</p>
+configured at the start of the application, basically following this formula
+(Python):</p>
 <pre><code class="lang-python">delay = max(random.randrange(politeness_delay*<span class="hljs-number">0.5</span>, politeness_delay*<span class="hljs-number">1.5</span>), robotstxt_delay, last_response**<span class="hljs-number">2</span>)
 </code></pre>
 <p>The maximum value between</p>
@@ -576,7 +584,7 @@ the last call delay on the crawling rules</li>
 <span class="hljs-addition">+   // We try to fetch a robots.txt rule to follow, being polite to the</span>
 <span class="hljs-addition">+    // domain</span>
 <span class="hljs-addition">+    crawlingRules := NewCrawlingRules(c.settings.PolitenessFixedDelay)</span>
-<span class="hljs-addition">+    if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {</span>
+<span class="hljs-addition">+    if crawlingRules.GetRobotsTxtGroup(c.linkFetcher, c.settings.UserAgent, rootURL) {</span>
 <span class="hljs-addition">+        c.logger.Printf(&quot;Found a valid %s/robots.txt&quot;, rootURL.Host)</span>
 <span class="hljs-addition">+    } else {</span>
 <span class="hljs-addition">+        c.logger.Printf(&quot;No valid %s/robots.txt found&quot;, rootURL.Host)</span>
@@ -751,12 +759,12 @@ ok      webcrawler/fetcher    (cached)
 
             
                 
-                <a href="messaging.html" class="navigation navigation-prev " aria-label="Previous page: Introducing a middleware">
+                <a href="messaging.html" class="navigation navigation-prev " aria-label="Previous page: 2.3. Introducing a middleware">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
                 
-                <a href="main.html" class="navigation navigation-next " aria-label="Next page: First run">
+                <a href="main.html" class="navigation navigation-next " aria-label="Next page: 2.5. First run">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -767,7 +775,7 @@ ok      webcrawler/fetcher    (cached)
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Crawling rules","level":"1.3.4","depth":2,"next":{"title":"First run","level":"1.3.5","depth":2,"path":"chapter1/main.md","ref":"chapter1/main.md","articles":[]},"previous":{"title":"Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-11-19T20:34:04.537Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-11-19T20:42:09.888Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"2.4. Crawling rules","level":"1.3.4","depth":2,"next":{"title":"2.5. First run","level":"1.3.5","depth":2,"path":"chapter1/main.md","ref":"chapter1/main.md","articles":[]},"previous":{"title":"2.3. Introducing a middleware","level":"1.3.3","depth":2,"path":"chapter1/messaging.md","ref":"chapter1/messaging.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["diff","hints","livereload"],"pluginsConfig":{"diff":{"type":"markdown","method":"diffChars","options":{}},"livereload":{},"search":{},"hints":{"danger":"fa fa-exclamation-circle","info":"fa fa-info-circle","tip":"fa fa-mortar-board","working":"fa fa-wrench"},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"highlight":{},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css"}},"file":{"path":"chapter1/crawling-rules.md","mtime":"2020-12-03T13:28:54.003Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2020-12-03T13:29:34.753Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
