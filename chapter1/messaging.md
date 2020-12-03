@@ -34,9 +34,17 @@ little as possible, and it really makes sense as every interface defines an
 enforcement, a contract that must be fulfilled, the less you have to implement
 to be compliant the better.
 
-For our application it's not strictly required to follow the rule, but for the
-sake of readability and extensibility for future additions we'll stick to it
-by adding three generic communication interfaces:
+We've seen how Go best approach to abstractions is to not abstract at all until
+needed, good news is that, given the inherent pragmatism of the language, we're
+allowed to break the rules sometimes, according to common sense.<br>
+In this case, we're reasonably sure that for our application we're going to
+need a simple communication channel that enables two operations:
+
+* Production
+* Consumption
+
+But for the sake of readability and extensibility for future additions we'll
+stick to Rob Pike's quote by adding three generic communication interfaces:
 
 **messaging/queue.go**
 
@@ -282,6 +290,8 @@ type WebCrawler struct {
 +	// components of the architecture, decoupling business logic from processing,
 +	// storage or presentation layers
 +	queue messaging.Producer
+    // linkFetcher is a LinkFetcher object, must expose Fetch and FetchLinks methods
+	linkFetcher LinkFetcher
 	// settings is a pointer to `CrawlerSettings` containing some crawler
 	// specifications
 	settings *CrawlerSettings
@@ -297,6 +307,7 @@ The constructor will be updated as well
 	crawler := &WebCrawler{
 		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
 +		queue:    queue,
+		linkFetcher: fetcher.New(userAgent, settings.Parser, settings.FetchTimeout),
 		settings: settings,
 	}
 	return crawler

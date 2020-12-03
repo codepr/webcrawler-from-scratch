@@ -21,7 +21,9 @@ fetcher:
 ## Parsing HTML documents
 
 So we move on writing some basic unit tests to define the behavior we expect
-from these two parts, starting with the HTML parser.
+from these two parts, starting with the HTML parser. The core feature we want
+to implement is a function that ingests an HTML document and return all the
+links it finds.
 
 *Note: After a brief search I found out that GoQuery by PuerkitoBio is the
 easiest and most handy library to parse HTML contents offering a jquery-like
@@ -68,13 +70,13 @@ func TestGoqueryParsePage(t *testing.T) {
 }
 ```
 
-Let's now move on with the implementation, we're going to define a parser
+Let's now move on with the implementation, we could very well define a parser
 interface exposing a single method `Parse(string, *io.Reader)([]*url.URL,
 error)`.<br>
 This definition of an interface foreseeing the implementation, is closer to a
 classical OOP style, think about Java usage of interfaces, we're going to
 define a contract to enforce a behavior; but it's not really the best and only
-usage of this language feature.
+usage of this language feature. More on this later.
 
 ### Little dissertation over interfaces in Go
 
@@ -108,6 +110,10 @@ they're used.<br> This is really akin to a duck-typing behavior at compile
 time, and it's enabled by this feature of Go, making it, for some aspects,
 really similar to dynamic languages like Python or Ruby.
 
+So to start grasping the problem we prefer to just start with a concrete
+implementation, we're going to decide later where and when (and if) we're
+going to need a general abstraction.
+
 **fetcher/parser.go**
 
 ```go
@@ -123,12 +129,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 )
-
-// Parser is an interface exposing a single method `Parse`, to be used on
-// raw results of a fetch call
-type Parser interface {
-	Parse(string, io.Reader) ([]*url.URL, error)
-}
 
 // GoqueryParser is just an algorithm `Parser` definition that uses
 // `github.com/PuerkitoBio/goquery` as a backend library
@@ -253,8 +253,10 @@ so the core component of the `fetcher` package will be an HTTP client.
 
 The next step is the definition of fetching unit tests, what we expect here is
 the possibility to simply fetch a single link, ignoring its content and
-fetching a link extracting all contained links.<br>We're probably going to
-defines two interfaces for these tasks, `Fetcher` and `LinkFetcher`.
+fetching a link extracting all contained links.
+
+We're going to mock a server probably, luckily Go provides us everything we
+need in the `net/http/httptest`.
 
 **fetcher/fetcher\_test.go**
 
@@ -353,6 +355,7 @@ package fetcher
 import (
 	"crypto/tls"
 	"fmt"
+    "io"
 	"net/http"
 	"net/url"
 	"time"
@@ -360,12 +363,10 @@ import (
 	"github.com/PuerkitoBio/rehttp"
 )
 
-// Fetcher is an interface exposing a method to fetch resources, Fetch enable
-// raw contents download.
-type Fetcher interface {
-	// Fetch makes an HTTP GET request to an URL returning a `*http.Response` or
-	// any error occured
-	Fetch(string) (time.Duration, *http.Response, error)
+// Parser is an interface exposing a single method `Parse`, to be used on
+// raw results of a fetch call
+type Parser interface {
+	Parse(string, io.Reader) ([]*url.URL, error)
 }
 
 // stdHttpFetcher is a simple Fetcher with std library http.Client as a
@@ -413,30 +414,32 @@ func (f stdHttpFetcher) Fetch(url string) (time.Duration, *http.Response, error)
 }
 ```
 
-Now that we have a simple `Fetcher` interface, we can easily extend his
+Now that we have a simple `Fetch` method, we can easily extend that
 behavior to fetch the page content and extract all the contained links, finally
-using that `parser` interface we have inserted into the `stdHttpFetcher`.
+using that `Parser` interface we have inserted into the `stdHttpFetcher`.
 
-We want to maintain the separation between `Fetcher` and `LinkFetcher`
-interfaces in order to maintain single responsibilities to each component and
-because we're going to need the simple HTTP request capability later.
+Go's approach to abstractions through interfaces is immediately highlighted in
+the snippet above: we declared a `Parser` interface **after** the concrete
+implementation of `GoqueryParser`, as we previously discussed, this is somewhat
+confusing for ordinary OOP patterns of pre-declaring interfaces as contract,
+enforcing a behavior for every concrete type (like in Java for example).<br>
+Languages that requires explicit implementation of interfaces promote that
+style, where you want to predict the abstraction you're going to implement. Go
+instead allows to implement interfaces implicitly by just implementing their
+methods. This unlocks a more flexible style, which promotes a better
+understanding of the problem before abstracting away details; thus in Go
+interfaces is generally declared closer to their clients. This way it's the
+client that dictates the abstraction needed and not the other way around,
+making the entire development process more flixible.
 
-*Note: in the `Fetcher` interface and in the `LinkFetcher` one, both exported
-methods return also a `time.Duration` as first value, that is the wall time of
-the call, telling us the time elapsed to make the HTTP call. It'll return
-useful later for calculating a politeness delay during the crawling process*
+*Note: the `Fetch` and `FetchLinks` methods, return also a `time.Duration` as
+first value, that is the wall time of the call, telling us the time elapsed to
+make the HTTP call. It'll return useful later for calculating a politeness
+delay during the crawling process*
 
 **fetcher/fetcher.go**
 
 ```go
-// LinkFetcher is an interface exposing a method to download raw contents and
-// parse them extracting all outgoing links.
-type LinkFetcher interface {
-	// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the
-	// response and returns an array of URLs or any error occured
-	FetchLinks(string) (time.Duration, []*url.URL, error)
-}
-
 // Parse an URL extracting the protion <scheme>://<host>:<port>
 // Returns a string with the base domain of the URL
 func parseStartURL(u string) string {

@@ -39,6 +39,7 @@ requests per unit of time, in the form of a `politenessDelay`, but we can do
 better, we're going to add a new object specifically responsible of the
 managing of these rules, we expect it to:
 
+* Be able to fetch the `robots.txt` file, if any
 * Be able to parse `robots.txt` files
 * Be able to calculate a good delay between calls, taking into consideration
   robots rules, the politeness delay and the response time of each call
@@ -65,7 +66,14 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+    "webcrawler/fetcher"
 )
+
+
+const userAgent = "test-agent"
+
+var f = fetcher.New(userAgent, nil, 10*time.Second)
 
 func serverMock() *httptest.Server {
 	handler := http.NewServeMux()
@@ -98,7 +106,7 @@ func TestCrawlingRules(t *testing.T) {
 	if !r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected true got false")
 	}
-	r.GetRobotsTxtGroup("test-agent", serverURL)
+	r.GetRobotsTxtGroup(f, userAgent, serverURL)
 	if r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected false got true")
 	}
@@ -112,7 +120,7 @@ func TestCrawlingRulesNotFound(t *testing.T) {
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
 	r := NewCrawlingRules(100*time.Millisecond)
-	if r.GetRobotsTxtGroup("test-agent", serverURL) {
+	if r.GetRobotsTxtGroup(f, userAgent, serverURL) {
 		t.Errorf("CrawlingRules#GetRobotsTxtGroup failed")
 	}
 }
@@ -142,8 +150,8 @@ a full lock on update (write) and just a read lock on read.
 
 The `CrawlingRules` object as we designed it will expose four methods:
 
-* `GetRobotsTxtGroup(userAgent string, domain *url.URL) bool`, tries to
-  retrieve the `robots.txt` file and parse it from the domain root, return
+* `GetRobotsTxtGroup(f Fetcher, userAgent string, domain *url.URL) bool`, tries
+  to retrieve the `robots.txt` file and parse it from the domain root, return
   `true` if a valid file is found
 * `Allowed(url *url.URL) bool`, return the validity of an URL according to the
   rules, `true` means that it can be crawled
@@ -214,8 +222,7 @@ func (r *CrawlingRules) Allowed(url *url.URL) bool {
 
 // GetRobotsTxtGroup tryes to fetch the robots.txt from the domain and parse
 // it. Returns a boolean based on the success of the process.
-func (r *CrawlingRules) GetRobotsTxtGroup(userAgent string, domain *url.URL) bool {
-	f := fetcher.New(userAgent, nil, 10*time.Second)
+func (r *CrawlingRules) GetRobotsTxtGroup(f Fetcher, userAgent string, domain *url.URL) bool {
 	u, _ := url.Parse(robotsTxtPath)
 	targetURL := domain.ResolveReference(u)
 	// Try to fetch the robots.txt file
@@ -241,7 +248,8 @@ domain:port/robots.txt.
 
 The crawling delay can be designed in a moltitude of ways, we opt for a way
 that should favor the server reaction time over the `politenessDelay` that's
-configured at the start of the application, basically following this formula:
+configured at the start of the application, basically following this formula
+(Python):
 
 ```python
 delay = max(random.randrange(politeness_delay*0.5, politeness_delay*1.5), robotstxt_delay, last_response**2)
@@ -324,7 +332,7 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 +   // We try to fetch a robots.txt rule to follow, being polite to the
 +	// domain
 +	crawlingRules := NewCrawlingRules(c.settings.PolitenessFixedDelay)
-+	if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {
++	if crawlingRules.GetRobotsTxtGroup(c.linkFetcher, c.settings.UserAgent, rootURL) {
 +		c.logger.Printf("Found a valid %s/robots.txt", rootURL.Host)
 +	} else {
 +		c.logger.Printf("No valid %s/robots.txt found", rootURL.Host)

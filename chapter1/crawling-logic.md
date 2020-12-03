@@ -14,9 +14,9 @@ crawling settings, defining the behavior of the crawler.
 
 What we want to be able to configure is:
 
-* `fetchingTimeout`, the number of (m)s to wait before declaring the link
+* `fetchTimeout`, the number of (m)s to wait before declaring the link
   unreachable if it's hanging
-* `crawlingTimeout`, the number of (m)s to wait after the last link we found
+* `crawlTimeout`, the number of (m)s to wait after the last link we found
   in the last crawled page, after which we declare the crawling done
 * `politenessDelay`, the number of (m)s to wait after an HTTP request before
   making another under the same domain
@@ -65,6 +65,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+    "net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -81,7 +82,7 @@ const (
 	defaultFetchTimeout time.Duration = 10 * time.Second
 	// Default crawling timeout, time to wait to stop the crawl after no links are
 	// found
-	defaultCrawlingTimeout time.Duration = 30 * time.Second
+	defaultCrawlTimeout time.Duration = 30 * time.Second
     // Default politeness delay, fixed delay to calculate a randomized wait time
 	// for subsequent HTTP calls to a domain
 	defaultPolitenessDelay time.Duration = 500 * time.Millisecond
@@ -93,6 +94,23 @@ const (
 	defaultUserAgent string = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 )
 
+// Fetcher is an interface exposing a method to fetch resources, Fetch enable
+// raw contents download.
+type Fetcher interface {
+	// Fetch makes an HTTP GET request to an URL returning a `*http.Response` or
+	// any error occured
+	Fetch(string) (time.Duration, *http.Response, error)
+}
+
+// LinkFetcher is an interface exposing a methdo to download raw contents and
+// parse them extracting all outgoing links.
+type LinkFetcher interface {
+	Fetcher
+	// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the
+	// response and returns an array of URLs or any error occured
+	FetchLinks(string) (time.Duration, []*url.URL, error)
+}
+
 // ParsedResult contains the URL crawled and an array of links found, json
 // serializable to be sent on message queues
 type ParsedResult struct {
@@ -103,12 +121,12 @@ type ParsedResult struct {
 // CrawlerSettings represents general settings for the crawler and his
 // dependencies
 type CrawlerSettings struct {
-	// FetchingTimeout is the time to wait before closing a connection that does not
+	// FetchTimeout is the time to wait before closing a connection that does not
 	// respond
-	FetchingTimeout time.Duration
-	// CrawlingTimeout is the number of second to wait before exiting the crawling
+	FetchTimeout time.Duration
+	// CrawlTimeout is the number of second to wait before exiting the crawling
 	// in case of no links found
-	CrawlingTimeout time.Duration
+	CrawlTimeout time.Duration
 	// Concurrency is the number of concurrent goroutine to run while fetching
 	// a page. 0 means unbounded
 	Concurrency int
@@ -132,6 +150,8 @@ type CrawlerSettings struct {
 type WebCrawler struct {
 	// logger is a private logger instance
 	logger *log.Logger
+    // linkFetcher is a LinkFetcher object, must expose Fetch and FetchLinks methods
+	linkFetcher LinkFetcher
 	// settings is a pointer to `CrawlerSettings` containing some crawler
 	// specifications
 	settings *CrawlerSettings
@@ -144,16 +164,17 @@ type WebCrawler struct {
 func New(userAgent string) *WebCrawler {
 	// Default crawler settings
 	settings := &CrawlerSettings{
-		FetchingTimeout:      defaultFetchTimeout,
+		FetchTimeout:         defaultFetchTimeout,
 		Parser:               fetcher.NewGoqueryParser(),
 		UserAgent:            userAgent,
-		CrawlingTimeout:      defaultCrawlingTimeout,
+		CrawlTimeout:         defaultCrawlTimeout,
 		PolitenessFixedDelay: defaultPolitenessDelay,
 		Concurrency:          defaultConcurrency,
 	}
 	crawler := &WebCrawler{
-		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
-		settings: settings,
+		logger:      log.New(os.Stderr, "crawler: ", log.LstdFlags),
+		linkFetcher: fetcher.New(userAgent, settings.Parser, settings.FetchTimeout),
+		settings:    settings,
 	}
 	return crawler
 }
@@ -162,10 +183,16 @@ func New(userAgent string) *WebCrawler {
 func NewFromSettings(settings *CrawlerSettings) *WebCrawler {
 	return &WebCrawler{
 		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
+		linkFetcher: fetcher.New(settings.UserAgent, settings.Parser, settings.FetchTimeout),
 		settings: settings,
 	}
 }
 ```
+*Note: as shown, we declared again two interfaces that we're going to need
+after the concrete implementation, also we want to maintain the separation
+between `Fetcher` and `LinkFetcher` interfaces in order to maintain single
+responsibilities to each component, and making it easier for clients to
+implement the interfaces, less is more.*
 
 As we can see, the number of settings is high and a little uncomfortable to
 manage with constructor functions, this is a good case to adopt an opt pattern,
@@ -184,10 +211,10 @@ type CrawlerOpt func(*CrawlerSettings)
 func New(userAgent string, opts ...CrawlerOpt) *WebCrawler {
 	// Default crawler settings
 	settings := &CrawlerSettings{
-		FetchingTimeout:      defaultFetchTimeout,
+		FetchTimeout:         defaultFetchTimeout,
 		Parser:               fetcher.NewGoqueryParser(),
 		UserAgent:            userAgent,
-		CrawlingTimeout:      defaultCrawlingTimeout,
+		CrawlTimeout:         defaultCrawlTimeout,
 		PolitenessFixedDelay: defaultPolitenessDelay,
 		Concurrency:          defaultConcurrency,
 	}
@@ -196,8 +223,9 @@ func New(userAgent string, opts ...CrawlerOpt) *WebCrawler {
 		opt(settings)
 	}
 	crawler := &WebCrawler{
-		logger:   log.New(os.Stderr, "crawler: ", log.LstdFlags),
-		settings: settings,
+		logger:      log.New(os.Stderr, "crawler: ", log.LstdFlags),
+		linkFetcher: fetcher.New(userAgent, settings.Parser, settings.FetchTimeout),
+		settings:    settings,
 	}
 	return crawler
 }
@@ -261,8 +289,6 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 	// First we wanna make sure we decrease the waitgroup counter at the end of
 	// the crawling
 	defer wg.Done()
-	fetchClient := fetcher.New(c.settings.UserAgent,
-		c.settings.Parser, c.settings.FetchingTimeout)
 	var (
 		// semaphore is just a value-less channel used to limit the number of
 		// concurrent goroutine workers fetching links
@@ -324,7 +350,7 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 						<-semaphore
 					}()
 					// We fetch the current link here and parse HTML for children links
-					_, foundLinks, err := fetchClient.FetchLinks(link.String())
+					_, foundLinks, err := c.linkFetcher.FetchLinks(link.String())
 					if err != nil {
 						c.logger.Println(err)
 						return
@@ -345,8 +371,8 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 					stop = c.settings.MaxDepth > 0 && depth >= c.settings.MaxDepth
 				}
 			}
-		case <-time.After(c.settings.CrawlingTimeout):
-			// c.settings.CrawlingTimeout seconds without any new link found, check
+		case <-time.After(c.settings.CrawlTimeout):
+			// c.settings.CrawlTimeout seconds without any new link found, check
 			// that the remaining links have been processed and stop the iteration
 			if atomic.LoadInt32(&linkCounter) <= 0 {
 				stop = true
