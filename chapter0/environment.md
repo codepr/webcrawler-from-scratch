@@ -5,8 +5,8 @@ the most popular editors and IDEs.
 
 Personally I prefer to stick with lightweight and open-source editors, plus
 with the advent of LSP servers, every editor can easily provide almost
-IDE-level development experience, in case of go, beside `GoLand` and `IntelliJ`
-products, the list ultimately leads to two main choices:
+IDE-level development experience, in case of go, beside `GoLand` of
+`JetBrains`, the list ultimately leads to two main choices:
 
 - `vim` (or `neovim`)
 - `vscode`

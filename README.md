@@ -4,7 +4,7 @@ Web crawler from scratch in Go
 Ever wondered how google.com works? What's under the hood that enables any user
 to insert a string and obtain related results from the web, given it's inherent
 complexity and vastity? How does the search engine indexes all those websites
-and correlate their contents with the input string?
+and relate their contents with the input string?
 
 We'll try to answer some of these questions by building a simplified version of
 the main component that power every search engine at his simplest: a web

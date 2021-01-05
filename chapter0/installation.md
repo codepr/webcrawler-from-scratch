@@ -8,7 +8,7 @@ that one:
 1. Download a `.tar.gz`
 
 ```
-curl https://golang.org/dl/go1.15.5.linux-amd64.tar.gz
+wget https://golang.org/dl/go1.15.5.linux-amd64.tar.gz
 ```
 
 2. Download the archive and extract it into `/usr/local`, creating a Go tree in `/usr/local/go`.
